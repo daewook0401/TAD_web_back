@@ -1,4 +1,4 @@
-package com.tad.www.configuration.jwt;
+package com.tad.www.core.config.security.jwt;
 
 import java.io.IOException;
 

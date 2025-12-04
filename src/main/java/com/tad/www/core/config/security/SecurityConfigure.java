@@ -1,4 +1,4 @@
-package com.tad.www.configuration;
+package com.tad.www.core.config.security;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
