@@ -16,21 +16,19 @@ Spring Boot 3.5.7 기반의 RESTful API 서버로, JWT 인증, WebSocket 지원,
 ### Core Dependencies
 - **Spring Security**: 보안 및 인증
 - **JWT (jjwt)**: 토큰 기반 인증 (0.12.3)
-- **Spring Data Redis**: 캐싱 및 세션 관리
-- **Spring Session**: 분산 세션 관리 (MongoDB, Redis)
-- **MyBatis**: 데이터베이스 매핑
+- **Spring Data JPA**: ORM 및 데이터 접근 계층
+- **Spring Data Redis**: 토큰 캐싱 및 관리
+- **Jedis**: Redis 클라이언트
 - **WebSocket**: 실시간 통신
 - **Lombok**: 보일러플레이트 코드 감소
 
 ### Database
-- **MySQL**: 주 데이터베이스
-- **MongoDB**: 세션 스토어 (선택적)
-- **Redis**: 캐싱 및 세션 스토어
+- **MySQL**: 주 데이터베이스 (JPA)
+- **Redis**: JWT 토큰 캐싱 및 토큰 블랙리스트 관리
 
 ### Testing
 - **JUnit 5**: 단위 테스트
 - **Spring Boot Test**: 통합 테스트
-- **Reactor Test**: 리액티브 프로그래밍 테스트
 
 ## 📁 프로젝트 구조
 
@@ -99,12 +97,14 @@ cd TAD_web_back
 - **JwtUtil**: JWT 토큰 생성, 검증, 파싱
 - **JwtFilter**: 요청 필터링 및 토큰 검증
 - **SecurityConfigure**: Spring Security 설정
+- **Redis**: 토큰 저장소 및 블랙리스트 관리
 
 ### 인증 플로우
-1. 사용자 로그인 → JWT 토큰 발급
+1. 사용자 로그인 → JWT 토큰 발급 및 Redis에 저장
 2. 요청 시 Authorization 헤더에 토큰 포함
-3. JwtFilter에서 토큰 검증
+3. JwtFilter에서 토큰 검증 (Redis 확인)
 4. 유효한 토큰일 경우 요청 처리
+5. 로그아웃 시 Redis에서 토큰 블랙리스트 추가
 
 ## 🔄 WebSocket
 
@@ -113,10 +113,15 @@ cd TAD_web_back
 
 ## 💾 데이터베이스
 
-### MyBatis 매핑
-- XML 기반 SQL 매핑
-- 동적 SQL 지원
-- 복잡한 쿼리 관리 용이
+### JPA (Java Persistence API)
+- 객체 관계 매핑 (ORM)
+- 선언적 쿼리 지원
+- 자동 테이블 생성 및 관리
+
+### Redis 토큰 관리
+- JWT 토큰 캐싱
+- 토큰 블랙리스트 관리 (로그아웃)
+- 빠른 토큰 검증
 
 ## 📝 API 문서
 
@@ -161,6 +166,7 @@ cd TAD_web_back
 
 - [ ] 사용자 프로필 관리
 - [ ] 역할 기반 접근 제어 (RBAC)
+- [ ] 토큰 갱신 (Refresh Token)
 - [ ] API 속도 제한 (Rate Limiting)
 - [ ] 로깅 및 모니터링
 - [ ] 문서 생성 자동화 (Swagger/OpenAPI)
