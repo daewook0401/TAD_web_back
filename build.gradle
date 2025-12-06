@@ -6,12 +6,14 @@ plugins {
 
 group = 'com.tad'
 version = '0.0.1-SNAPSHOT'
-description = 'Demo project for Spring Boot'
+description = 'TAD Web Backend - Spring Boot RESTful API Server'
 
 java {
 	toolchain {
 		languageVersion = JavaLanguageVersion.of(21)
 	}
+	sourceCompatibility = '21'
+	targetCompatibility = '21'
 }
 
 configurations {
@@ -22,26 +24,74 @@ configurations {
 
 repositories {
 	mavenCentral()
-} 
+}
+
+ext {
+	// Version Management
+	jjwtVersion = '0.12.3'
+	lombokVersion = '1.18.30'
+	mysqlVersion = '8.4.0'
+	jedisVersion = '5.1.2'
+	validationVersion = '2.0.1'
+	junitVersion = '5.10.0'
+	mockitoVersion = '5.6.1'
+}
 
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
-	implementation 'org.springframework.boot:spring-boot-starter-security'
+	// === Spring Boot Core ===
 	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-websocket'
-	implementation 'io.jsonwebtoken:jjwt-api:0.12.3'
-	implementation 'io.jsonwebtoken:jjwt-jackson:0.12.3'
-	implementation 'io.jsonwebtoken:jjwt-impl:0.12.3'
-	implementation 'redis.clients:jedis'
-	compileOnly 'org.projectlombok:lombok'
-	runtimeOnly 'com.mysql:mysql-connector-j'
-	annotationProcessor 'org.projectlombok:lombok'
+	
+	// === Data Access & ORM ===
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation "com.mysql:mysql-connector-j:${mysqlVersion}"
+	
+	// === Cache & Session ===
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+	implementation "redis.clients:jedis:${jedisVersion}"
+	
+	// === Authentication & Authorization ===
+	implementation "io.jsonwebtoken:jjwt-api:${jjwtVersion}"
+	implementation "io.jsonwebtoken:jjwt-jackson:${jjwtVersion}"
+	implementation "io.jsonwebtoken:jjwt-impl:${jjwtVersion}"
+	
+	// === Validation & Serialization ===
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation "jakarta.validation:jakarta.validation-api:${validationVersion}"
+	
+	// === Logging ===
+	implementation 'org.springframework.boot:spring-boot-starter-logging'
+	
+	// === Utility ===
+	compileOnly "org.projectlombok:lombok:${lombokVersion}"
+	annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+	implementation 'com.google.code.gson:gson:2.10.1'
+	
+	// === Development Tools ===
+	implementation 'org.springframework.boot:spring-boot-devtools'
+	
+	// === Test Dependencies ===
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.security:spring-security-test'
+	testImplementation "org.junit.jupiter:junit-jupiter-api:${junitVersion}"
+	testImplementation "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
+	testImplementation "org.mockito:mockito-core:${mockitoVersion}"
+	testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+// === Build Properties ===
+bootRun {
+	systemProperties = System.properties
+}
+
+tasks.withType(JavaCompile) {
+	options.encoding = 'UTF-8'
+	options.compilerArgs << '-parameters'
 }

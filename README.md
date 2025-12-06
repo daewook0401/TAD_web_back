@@ -1,190 +1,286 @@
-# TAD Web Backend
+# 1. 📘 시스템 개요
 
-TAD(Technology Advancement Development) 프로젝트의 백엔드 서비스입니다.
+TAD Web Backend는 **Spring Boot 3.5.7** 기반의 RESTful API 서버로, 다음을 목표로 설계되었습니다.
 
-## 📋 프로젝트 개요
+- 사용자 인증 및 권한 관리 (JWT 기반)
+- MySQL + JPA 기반의 안정적인 데이터 관리
+- Redis 기반의 캐싱 및 토큰/세션 관리
+- WebSocket을 통한 실시간 데이터 통신
+- 높은 유지보수성, 확장성을 가진 모듈 구조
 
-Spring Boot 3.5.7 기반의 RESTful API 서버로, JWT 인증, WebSocket 지원, Redis 캐싱 등의 기능을 제공합니다.
+본 문서는 **설계 단계(TAD Architecture)** 기준으로 작성되었습니다.
 
-## 🛠️ 기술 스택
+# 2. 🧱 전체 아키텍처 구조
 
-### Core Framework
-- **Spring Boot**: 3.5.7
-- **Java**: 21
-- **Build Tool**: Gradle
+## ✔ High-Level Architecture
 
-### Core Dependencies
-- **Spring Security**: 보안 및 인증
-- **JWT (jjwt)**: 토큰 기반 인증 (0.12.3)
-- **Spring Data JPA**: ORM 및 데이터 접근 계층
-- **Spring Data Redis**: 토큰 캐싱 및 관리
-- **Jedis**: Redis 클라이언트
-- **WebSocket**: 실시간 통신
-- **Lombok**: 보일러플레이트 코드 감소
-
-### Database
-- **MySQL**: 주 데이터베이스 (JPA)
-- **Redis**: JWT 토큰 캐싱 및 토큰 블랙리스트 관리
-
-### Testing
-- **JUnit 5**: 단위 테스트
-- **Spring Boot Test**: 통합 테스트
-
-## 📁 프로젝트 구조
-
-```
-src/
-├── main/
-│   ├── java/com/tad/www/
-│   │   ├── WwwApplication.java
-│   │   ├── api/
-│   │   │   ├── advice/              # Global Exception Handler
-│   │   │   └── v1/
-│   │   │       └── auth/
-│   │   │           └── controller/   # 인증 관련 컨트롤러
-│   │   ├── common/                  # 공통 유틸리티
-│   │   ├── configuration/           # 설정 클래스
-│   │   ├── core/
-│   │   │   └── config/
-│   │   │       └── security/        # 보안 설정
-│   │   │           ├── SecurityConfigure.java
-│   │   │           └── jwt/
-│   │   │               ├── JwtFilter.java
-│   │   │               └── JwtUtil.java
-│   │   └── infra/                   # 인프라 계층
-│   └── resources/
-│       ├── application.yml
-│       └── application-private.yml
-└── test/
-    └── java/com/tad/www/
-        └── WwwApplicationTests.java
+```markdown
+[Client (Web/Native)] 
+        │
+        ▼
+[API Gateway / Nginx]
+        │
+        ▼
+[Spring Boot Backend]
+  ├── API Layer (v1)
+  ├── Application/Domain Layer
+  ├── Security Layer (JWT)
+  ├── Persistence Layer (JPA)
+  ├── Mapper Layer (MyBatis)
+  └── WebSocket Layer
+        │
+        ├── MySQL (Master DB)
+        ├── Redis (Token/Cache)
+        └── MongoDB (선택적 세션 저장)
 ```
 
-## 🚀 시작하기
+## ✔ 주요 컴포넌트 역할
 
-### 사전 요구사항
-- Java 21 이상
-- Gradle 7.x 이상
-- MySQL 8.0 이상
-- Redis 6.0 이상 (선택적)
+| 컴포넌트 | 역할 |
+| --- | --- |
+| Spring Boot API | REST API / 인증 / 비즈니스 로직 |
+| Security Layer | JWT 인증/인가 처리 |
+| MySQL | 주요 데이터 저장 |
+| JPA | 엔티티 기반 ORM 처리 |
+| MyBatis | 복잡한 SQL, 조회 성능 최적화 |
+| Redis | Refresh Token, 인증 코드, 캐싱 |
+| WebSocket | 실시간 알림·동기화 |
 
-### 설치 및 실행
+# 3. 🛠 기술 스택 상세
 
-1. **저장소 클론**
-```bash
-git clone <repository-url>
-cd TAD_web_back
-```
+## 3.1 Backend Core
 
-2. **의존성 설치**
-```bash
-./gradlew build
-```
-
-3. **환경 설정**
-`application-private.yml` 파일에서 데이터베이스, Redis 등의 연결 정보를 설정합니다.
-
-4. **애플리케이션 실행**
-```bash
-./gradlew bootRun
-```
-
-서버는 기본적으로 `http://localhost:8080`에서 실행됩니다.
-
-## 🔐 인증 시스템
-
-### JWT 기반 인증
-- **JwtUtil**: JWT 토큰 생성, 검증, 파싱
-- **JwtFilter**: 요청 필터링 및 토큰 검증
-- **SecurityConfigure**: Spring Security 설정
-- **Redis**: 토큰 저장소 및 블랙리스트 관리
-
-### 인증 플로우
-1. 사용자 로그인 → JWT 토큰 발급 및 Redis에 저장
-2. 요청 시 Authorization 헤더에 토큰 포함
-3. JwtFilter에서 토큰 검증 (Redis 확인)
-4. 유효한 토큰일 경우 요청 처리
-5. 로그아웃 시 Redis에서 토큰 블랙리스트 추가
-
-## 🔄 WebSocket
-
-실시간 양방향 통신을 지원합니다.
-- 채팅, 알림, 실시간 데이터 동기화 등에 활용
-
-## 💾 데이터베이스
-
-### JPA (Java Persistence API)
-- 객체 관계 매핑 (ORM)
-- 선언적 쿼리 지원
-- 자동 테이블 생성 및 관리
-
-### Redis 토큰 관리
-- JWT 토큰 캐싱
-- 토큰 블랙리스트 관리 (로그아웃)
-- 빠른 토큰 검증
-
-## 📝 API 문서
-
-### Auth API (`/api/v1/auth`)
-- `POST /login` - 사용자 로그인
-- `POST /register` - 사용자 회원가입
-- `POST /refresh` - 토큰 갱신
-- `POST /logout` - 로그아웃
-
-> 📌 **추가 예정인 엔드포인트**
-> - 비밀번호 재설정
-> - 이메일 인증
-> - OAuth 연동
-
-## 🧪 테스트
-
-```bash
-# 전체 테스트 실행
-./gradlew test
-
-# 특정 테스트 클래스 실행
-./gradlew test --tests WwwApplicationTests
-```
-
-## 📦 배포
-
-### 실행 가능한 JAR 생성
-```bash
-./gradlew bootJar
-```
-
-생성된 JAR 파일은 `build/libs/` 디렉토리에 위치합니다.
-
-## 🔄 CI/CD
-
-> 📌 **구성 예정**
-> - GitHub Actions 워크플로우
-> - 자동 테스트 및 빌드
-> - 배포 자동화
-
-## 📚 추가 기능 (개발 예정)
-
-- [ ] 사용자 프로필 관리
-- [ ] 역할 기반 접근 제어 (RBAC)
-- [ ] 토큰 갱신 (Refresh Token)
-- [ ] API 속도 제한 (Rate Limiting)
-- [ ] 로깅 및 모니터링
-- [ ] 문서 생성 자동화 (Swagger/OpenAPI)
-- [ ] 이벤트 기반 아키텍처
-- [ ] 마이크로서비스 통신
-
-## 🤝 기여
-
-이 프로젝트는 개인 프로젝트입니다.
-
-## 📧 연락처
-
-문의 사항이 있으시면 연락주세요.
-
-## 📄 라이센스
-
-이 프로젝트는 개인 사용을 위한 비공개 프로젝트입니다.
+- Spring Boot 3.5.7
+- Java 21
+- Gradle
+- Spring Security
+- JJWT 0.12.3
+- Spring Data JPA
+- MyBatis
+- Spring Data Redis
+- WebSocket (Stomp)
 
 ---
 
-**마지막 업데이트**: 2025년 12월 4일
+# 4. 📁 패키지 구조 (아키텍처 Layering)
+
+```
+com.tad.www
+├── WwwApplication.java
+├── api/
+│   ├── advice/             # GlobalExceptionHandler
+│   └── v1/
+│       └── auth/
+│           └── controller/  # 인증 도메인 API
+├── common/                 # 공통 util, response, enums
+├── configuration/          # Spring, Redis, Origin 설정
+├── core/
+│   └── config/security/    # Security + JWT 설정
+│       ├── SecurityConfigure.java
+│       ├── JwtFilter.java
+│       └── JwtUtil.java
+└── infra/                  # DB, Redis, Mapper
+
+```
+
+---
+
+# 5. 🔐 인증 아키텍처 (JWT + Redis)
+
+## 5.1 Access / Refresh Token 전략
+
+| 항목 | 저장 위치 | TTL | 설명 |
+| --- | --- | --- | --- |
+| Access Token | 클라이언트 | 15~30분 | API 요청 시 인증 |
+| Refresh Token | Redis | 7~14일 | 토큰 재발급용 |
+| Blacklist Token | Redis | Access Token 잔여 기간 | 로그아웃, 강제 만료 |
+
+### Redis Key 구조 예시
+
+```
+auth:refresh:{memberId}
+auth:blacklist:{accessToken}
+auth:code:{email}
+
+```
+
+---
+
+## 5.2 인증 플로우
+
+```
+[Login Request]
+        │
+        ▼
+User 인증 → JWT 발급
+        │
+        ├── Access Token → Client
+        └── Refresh Token → Redis 저장
+
+```
+
+**재발급**
+
+1. 클라이언트 → `/refresh`
+2. Redis에서 Refresh Token 조회 및 검증
+3. Access Token 재발급
+
+**로그아웃**
+
+1. Access Token → Redis 블랙리스트 저장
+2. Refresh Token 삭제
+
+---
+
+# 6. 💾 데이터베이스 설계 (MySQL + JPA)
+
+## 6.1 설계 원칙
+
+- 모든 테이블 UTF8MB4
+- `id(PK)`, `created_at`, `updated_at`, `status` 공통 적용
+- 연관관계는 **단방향 지향**
+- 비밀번호는 BCrypt로 암호화
+- JPA는 트랜잭션 기반의 CRUD 중심
+- 복잡한 조회 = MyBatis로 분리
+
+---
+
+## 6.2 주요 엔티티(예시)
+
+### Member
+
+| 컬럼 | 타입 | 설명 |
+| --- | --- | --- |
+| id | BIGINT | PK |
+| username | VARCHAR(50) | UNIQUE |
+| password | VARCHAR(255) | BCrypt |
+| email | VARCHAR(255) |  |
+| role | ENUM | USER/ADMIN |
+| status | ENUM | ACTIVE/DELETED |
+| created_at | DATETIME |  |
+| updated_at | DATETIME |  |
+
+### AuthLog (선택)
+
+로그/감사 기록 확장 가능
+
+---
+
+# 7. 💨 Redis & 캐싱 설계
+
+## Redis 사용 목적
+
+| 종류 | 용도 |
+| --- | --- |
+| Token Store | Refresh Token / Blacklist |
+| 인증 번호 | 이메일·휴대폰 인증 |
+| 세션 | Spring Session 사용 시 |
+| 캐시 | 인증 사용자 정보, 빈번 조회 데이터 |
+
+---
+
+# 8. 🔊 WebSocket 설계
+
+## WebSocket 사용 목적
+
+- 실시간 알림
+- 채팅
+- 실시간 상태 업데이트
+
+## 연결 구조
+
+```
+Client
+  ↕ STOMP
+WebSocket Controller
+  ↕
+Message Broker
+
+```
+
+---
+
+# 9. 🧪 테스트 전략
+
+### 단위 테스트
+
+- JUnit 5
+- Mockito
+- Security 테스트용 MockUser
+
+### 통합 테스트
+
+- SpringBootTest
+- WebMvcTest
+- Embedded Redis (선택)
+
+### 추가 예정
+
+- 부하 테스트 (k6, JMeter)
+
+---
+
+# 10. 📦 배포 & 운영
+
+## 빌드
+
+```bash
+./gradlew bootJar
+
+```
+
+## 설정 파일 구조
+
+```
+application.yml
+application-private.yml
+└── DB, Redis, JWT secrets 관리
+
+```
+
+## 향후 CI/CD 구성
+
+- GitHub Actions → Build & Test
+- Docker Image Build
+- Server Deploy 자동화
+
+---
+
+# 11. 📘 API 설계 (요약)
+
+### Auth API (`/api/v1/auth`)
+
+| Method | URI | 설명 |
+| --- | --- | --- |
+| POST | /login | 로그인 |
+| POST | /register | 회원가입 |
+| POST | /refresh | 토큰 재발급 |
+| POST | /logout | 로그아웃 |
+
+---
+
+# 12. 📡 장애 대응 전략
+
+| 장애 | 대응 방식 |
+| --- | --- |
+| Redis 다운 | Refresh Token 만료 → 재로그인 요구 |
+| DB 슬로우쿼리 | 인덱스 튜닝, Query 분석 |
+| 과도한 요청 | Rate Limit / WebSecurity 설정 |
+| JWT 탈취 | 블랙리스트 + 강제 로그아웃 |
+
+---
+
+# 13. 🛠 향후 확장 계획
+
+- RBAC(Role-Based Access Control)
+- Swagger/OpenAPI 문서 자동화
+- API Rate Limiting
+- 이벤트 기반 아키텍처 도입
+- MSA 전환 가능 구조 탐색
+
+---
+
+# 14. 📄 부록
+
+- 마지막 업데이트: **2025-12-04**
+- 작성: 김대욱
