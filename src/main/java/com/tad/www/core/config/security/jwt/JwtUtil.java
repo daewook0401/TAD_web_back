@@ -26,6 +26,15 @@ public class JwtUtil {
         this.key = Keys.hmacShaKeyFor(keyArr);
     }
 
+    public String generateToken(String email) {
+        return Jwts.builder()
+                .subject(email)
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + (3600000L * 24)))
+                .signWith(key)
+                .compact();
+    }
+
     public String getAccessToken(String memberId){
         return Jwts.builder()
                     .subject(memberId)
@@ -50,5 +59,27 @@ public class JwtUtil {
                     .expiration(new Date(System.currentTimeMillis() + (3600000L * 24 * day)))
                     .signWith(key)
                     .compact();
+    }
+
+    public String extractEmail(String token) {
+        return Jwts.parser()
+                .verifyWith(key)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .getSubject();
+    }
+
+    public boolean validateToken(String token) {
+        try {
+            Jwts.parser()
+                    .verifyWith(key)
+                    .build()
+                    .parseSignedClaims(token);
+            return true;
+        } catch (Exception e) {
+            log.error("Token validation failed: {}", e.getMessage());
+            return false;
+        }
     }
 }
