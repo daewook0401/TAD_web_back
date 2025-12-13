@@ -1,4 +1,4 @@
-package com.tad.www.api.v1.auth.dto;
+package com.tad.www.api.auth.dto.signup;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,10 +9,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class LoginResponse {
+public class SignupResponse {
     private boolean success;
     private String message;
-    private String token;
     private UserInfo user;
 
     @Data
