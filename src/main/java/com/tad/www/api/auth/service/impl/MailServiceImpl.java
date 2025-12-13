@@ -6,7 +6,9 @@ public class MailServiceImpl implements MailService {
 
     @Override
     public String sendVerificationEmail(MailDTO mailDTO) {
-        throw new UnsupportedOperationException("Unimplemented method 'sendVerificationEmail'");
+
+        System.out.println("asdf");
+        return "메일 전송 완료";
     }
 
     @Override
