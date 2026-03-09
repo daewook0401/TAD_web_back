@@ -1,6 +1,6 @@
 plugins {
 	id 'java'
-	id 'org.springframework.boot' version '3.5.7'
+	id 'org.springframework.boot' version '3.5.11'
 	id 'io.spring.dependency-management' version '1.1.7'
 }
 
@@ -30,58 +30,30 @@ ext {
 	// Version Management
 	jjwtVersion = '0.12.3'
 	lombokVersion = '1.18.30'
-	mysqlVersion = '8.4.0'
-	sqliteVersion = '3.44.0.0'
-	jedisVersion = '5.1.2'
+	postgresqlVersion = '42.6.0'
 	validationVersion = '2.0.1'
 	junitVersion = '5.10.0'
-	mockitoVersion = '5.6.1'
+	mockitoVersion = '5.7.0'
 }
 
 dependencies {
-	// === Spring Boot Core ===
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
-	implementation 'org.springframework.boot:spring-boot-starter-websocket'
-	
-	// === Data Access & ORM ===
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	implementation "com.mysql:mysql-connector-j:${mysqlVersion}"
-	implementation "org.xerial:sqlite-jdbc:${sqliteVersion}"
-	implementation 'org.hibernate.orm:hibernate-community-dialects:6.4.0.Final'
-	
-	// === Cache & Session ===
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
-	implementation "redis.clients:jedis:${jedisVersion}"
-	
-	// === Authentication & Authorization ===
-	implementation "io.jsonwebtoken:jjwt-api:${jjwtVersion}"
-	implementation "io.jsonwebtoken:jjwt-jackson:${jjwtVersion}"
-	implementation "io.jsonwebtoken:jjwt-impl:${jjwtVersion}"
-	
-	// === Validation & Serialization ===
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
-	implementation "jakarta.validation:jakarta.validation-api:${validationVersion}"
-	
-	// === Logging ===
-	implementation 'org.springframework.boot:spring-boot-starter-logging'
-	
-	// === Utility ===
+
+	implementation "org.postgresql:postgresql:${postgresqlVersion}"
+
+	implementation "io.jsonwebtoken:jjwt-api:${jjwtVersion}"
+	runtimeOnly "io.jsonwebtoken:jjwt-impl:${jjwtVersion}"
+	runtimeOnly "io.jsonwebtoken:jjwt-jackson:${jjwtVersion}"
+
 	compileOnly "org.projectlombok:lombok:${lombokVersion}"
 	annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
-	implementation 'com.google.code.gson:gson:2.10.1'
-	
-	// === Development Tools ===
-	implementation 'org.springframework.boot:spring-boot-devtools'
-	
-	// === Test Dependencies ===
+
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.security:spring-security-test'
-	testImplementation "org.junit.jupiter:junit-jupiter-api:${junitVersion}"
-	testImplementation "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
-	testImplementation "org.mockito:mockito-core:${mockitoVersion}"
-	testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 

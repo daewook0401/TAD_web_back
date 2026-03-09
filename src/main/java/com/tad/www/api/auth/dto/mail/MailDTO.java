@@ -1,13 +1,18 @@
 package com.tad.www.api.auth.dto.mail;
 
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Builder;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Getter
-public class MailDTO {
+@Builder
+public class MailDto {
     private String code;
+    private String requestId;
     private String email;
+    private String purpose;
+
 }
