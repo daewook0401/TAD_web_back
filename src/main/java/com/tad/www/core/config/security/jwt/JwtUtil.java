@@ -8,6 +8,9 @@ import javax.crypto.SecretKey;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
@@ -16,69 +19,84 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 @Slf4j
 public class JwtUtil {
-    @Value("${jwt.secret}")
+    @Value("${app.jwt.secret-base64}")
     private String secretKey;
+
+    @Value("${app.jwt.access-minutes}")
+    private int accessTokenMinutes;
+
+    @Value("${app.jwt.refresh-days}")
+    private int refreshTokenDays;
+
+    @Value("${app.jwt.issuer}")
+    private String issuer;
+
     private SecretKey key;
 
     @PostConstruct
     public void init(){
-        byte[] keyArr = Base64.getDecoder().decode(secretKey);
-        this.key = Keys.hmacShaKeyFor(keyArr);
+        try {
+            byte[] keyArr = Base64.getDecoder().decode(secretKey);
+            this.key = Keys.hmacShaKeyFor(keyArr);
+        } catch (Exception e) {
+            throw new IllegalStateException("JWT secret key 초기화 실패", e);
+        }
     }
 
-    public String generateToken(String email) {
+    public String getAccessToken(String publicId){
         return Jwts.builder()
-                .subject(email)
-                .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + (3600000L * 24)))
-                .signWith(key)
-                .compact();
-    }
-
-    public String getAccessToken(String memberId){
-        return Jwts.builder()
-                    .subject(memberId)
+                    .subject(publicId)
+                    .issuer(issuer)
+                    .claim("type", "access")
                     .issuedAt(new Date())
-                    .expiration(new Date(System.currentTimeMillis() + (3600000L * 24)))
+                    .expiration(new Date(System.currentTimeMillis() + (accessTokenMinutes * 60 * 1000L)))
                     .signWith(key)
                     .compact();
     }
 
-    public String getRefreshToken(String memberId){
+    public String getRefreshToken(String publicId){
         return Jwts.builder()
-                    .subject(memberId)
+                    .subject(publicId)
+                    .issuer(issuer)
+                    .claim("type", "refresh")
                     .issuedAt(new Date())
-                    .expiration(new Date(System.currentTimeMillis() + (3600000L * 24 * 3)))
+                    .expiration(new Date(System.currentTimeMillis() + (refreshTokenDays * 24 * 60 * 60 * 1000L)))
                     .signWith(key)
                     .compact();
     }
-    public String getRefreshToken(String memberId, int day){
+    public String getRefreshToken(String publicId, int day){
         return Jwts.builder()
-                    .subject(memberId)
+                    .subject(publicId)
+                    .issuer(issuer)
+                    .claim("type", "refresh")
                     .issuedAt(new Date())
-                    .expiration(new Date(System.currentTimeMillis() + (3600000L * 24 * day)))
+                    .expiration(new Date(System.currentTimeMillis() + (day * 24 * 60 * 60 * 1000L)))
                     .signWith(key)
                     .compact();
     }
 
-    public String extractEmail(String token) {
-        return Jwts.parser()
-                .verifyWith(key)
-                .build()
-                .parseSignedClaims(token)
-                .getPayload()
-                .getSubject();
+    public Claims parseJwt(String token){
+        Claims claims = null;
+        try{
+            claims = Jwts.parser()
+                                .verifyWith(key)
+                                .requireIssuer(issuer)
+                                .build()
+                                .parseSignedClaims(token)
+                                .getPayload();
+        } catch (ExpiredJwtException e){
+            log.warn("JWT token expired: {}", e.getMessage());
+        } catch (JwtException e){
+            log.warn("Invalid JWT token: {}", e.getMessage());
+        }
+        return claims;
     }
 
     public boolean validateToken(String token) {
         try {
-            Jwts.parser()
-                    .verifyWith(key)
-                    .build()
-                    .parseSignedClaims(token);
+            parseJwt(token);
             return true;
-        } catch (Exception e) {
-            log.error("Token validation failed: {}", e.getMessage());
+        } catch (JwtException e) {
             return false;
         }
     }
