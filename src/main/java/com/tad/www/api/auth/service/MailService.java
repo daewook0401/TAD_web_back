@@ -1,8 +1,11 @@
 package com.tad.www.api.auth.service;
 
+import java.security.SecureRandom;
 import java.time.Duration;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 import com.tad.www.api.auth.dto.response.MailVerificationResponse;
@@ -14,8 +17,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class MailService {
 
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
     private final EmailVerificationRedisService emailVerificationRedisService;
     private final UserRepository userRepository;
+    private final JavaMailSender mailSender;
+
+    @Value("${spring.mail.username}")
+    private String fromEmail;
 
     @Value("${app.email-verification.code-minutes:3}")
     private long codeTtlMinutes;
@@ -65,10 +74,16 @@ public class MailService {
     }
 
     private void send(String email, String code) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(fromEmail);
+        message.setTo(email);
+        message.setSubject("[TAD] 이메일 인증 코드");
+        message.setText("인증 코드: " + code + "\n\n해당 코드는 " + codeTtlMinutes + "분 동안 유효합니다.");
+        mailSender.send(message);
     }
 
     private String createCode() {
-        return String.valueOf((int) ((Math.random() * 900000) + 100000));
+        return String.format("%06d", SECURE_RANDOM.nextInt(1_000_000));
     }
 
     private String normalizeEmail(String email) {
