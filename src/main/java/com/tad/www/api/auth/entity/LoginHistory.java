@@ -33,11 +33,17 @@ public class LoginHistory {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @Column(name = "ip_address", length = 45)
+    @Column(name = "ip_address", length = 100)
     private String ipAddress;
 
-    @Column(name = "user_agent", length = 500)
+    @Column(name = "user_agent", columnDefinition = "TEXT")
     private String userAgent;
+
+    @Column(name = "login_type", nullable = false, length = 30)
+    private String loginType;
+
+    @Column(name = "login_result", nullable = false, length = 20)
+    private String loginResult;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

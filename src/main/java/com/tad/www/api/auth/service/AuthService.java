@@ -105,7 +105,7 @@ public class AuthService {
         }
 
         user.setLastLoginAt(OffsetDateTime.now());
-        saveLoginHistory(user.getId());
+        saveLoginHistory(user.getId(), "NORMAL", "SUCCESS");
         List<String> roles = userRoleRepository.findRoleNamesByUserId(user.getId());
 
         UUID publicId = UUID.randomUUID();
@@ -181,13 +181,15 @@ public class AuthService {
         return email == null ? null : email.trim().toLowerCase();
     }
 
-    private void saveLoginHistory(Long userId) {
+    private void saveLoginHistory(Long userId, String loginType, String loginResult) {
         HttpServletRequest request = currentRequest();
 
         loginHistoryRepository.save(LoginHistory.builder()
             .userId(userId)
             .ipAddress(resolveClientIp(request))
             .userAgent(resolveUserAgent(request))
+            .loginType(loginType)
+            .loginResult(loginResult)
             .build());
     }
 
@@ -227,6 +229,6 @@ public class AuthService {
             return null;
         }
 
-        return userAgent.length() <= 500 ? userAgent : userAgent.substring(0, 500);
+        return userAgent;
     }
 }
