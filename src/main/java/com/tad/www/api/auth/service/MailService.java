@@ -4,6 +4,7 @@ import java.security.SecureRandom;
 import java.time.Duration;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.mail.MailProperties;
 import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -13,7 +14,9 @@ import com.tad.www.api.auth.dto.response.MailVerificationResponse;
 import com.tad.www.api.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MailService {
@@ -23,6 +26,7 @@ public class MailService {
     private final EmailVerificationRedisService emailVerificationRedisService;
     private final UserRepository userRepository;
     private final JavaMailSender mailSender;
+    private final MailProperties mailProperties;
 
     @Value("${spring.mail.username:no-reply@tad.local}")
     private String fromEmail;
@@ -75,6 +79,10 @@ public class MailService {
     }
 
     private void send(String email, String code) {
+        if (mailProperties.getHost() == null || mailProperties.getHost().isBlank()) {
+            throw new IllegalStateException("메일 서버 설정이 없어 인증 메일을 발송할 수 없습니다.");
+        }
+
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromEmail);
         message.setTo(email);
@@ -83,7 +91,8 @@ public class MailService {
         try {
             mailSender.send(message);
         } catch (MailException e) {
-            throw new RuntimeException("이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.", e);
+            log.error("Failed to send verification email to {}", email, e);
+            throw new IllegalStateException("이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.", e);
         }
     }
 
