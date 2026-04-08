@@ -4,6 +4,7 @@ import java.security.SecureRandom;
 import java.time.Duration;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
@@ -79,7 +80,11 @@ public class MailService {
         message.setTo(email);
         message.setSubject("[TAD] 이메일 인증 코드");
         message.setText("인증 코드: " + code + "\n\n해당 코드는 " + codeTtlMinutes + "분 동안 유효합니다.");
-        mailSender.send(message);
+        try {
+            mailSender.send(message);
+        } catch (MailException e) {
+            throw new RuntimeException("이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.", e);
+        }
     }
 
     private String createCode() {
