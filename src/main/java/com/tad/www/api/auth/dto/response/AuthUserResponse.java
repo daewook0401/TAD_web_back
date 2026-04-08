@@ -12,7 +12,7 @@ import lombok.Getter;
 public class AuthUserResponse {
 
     private Long id;
-    private String name;
+    private String nickname;
     private String email;
     private String memberRole;
     private List<String> roles;
@@ -21,7 +21,7 @@ public class AuthUserResponse {
         String memberRole = roles == null || roles.isEmpty() ? null : roles.get(0);
         return AuthUserResponse.builder()
             .id(user.getId())
-            .name(user.getNickname())
+            .nickname(user.getNickname())
             .email(user.getEmail())
             .memberRole(memberRole)
             .roles(roles)

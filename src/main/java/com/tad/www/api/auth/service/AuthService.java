@@ -37,8 +37,14 @@ public class AuthService {
     @Transactional
     public AuthResponse signup(SignupRequest request) {
         String normalizedEmail = normalizeEmail(request.getEmail());
+        String normalizedNickname = request.getNickname().trim();
+
         if (userRepository.existsByEmail(normalizedEmail)) {
             throw new IllegalArgumentException("이미 가입된 이메일입니다.");
+        }
+
+        if (userRepository.existsByNickname(normalizedNickname)) {
+            throw new IllegalArgumentException("이미 사용 중인 닉네임입니다.");
         }
 
         if (!emailVerificationRedisService.isVerified(normalizedEmail)) {
@@ -47,7 +53,7 @@ public class AuthService {
 
         User user = User.builder()
             .email(normalizedEmail)
-            .nickname(request.getName().trim())
+            .nickname(normalizedNickname)
             .passwordHash(passwordEncoder.encode(request.getPassword()))
             .emailVerified(true)
             .status("ACTIVE")
