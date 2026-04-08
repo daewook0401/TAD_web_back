@@ -10,6 +10,6 @@ public class AuthResponse {
     private boolean success;
     private String message;
     private AuthUserResponse user;
-    private String token;
+    private String accessToken;
     private String refreshToken;
 }

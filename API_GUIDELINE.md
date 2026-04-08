@@ -9,8 +9,8 @@
 - 실제 호출 URI는 모두 `/api/...` 형태입니다.
 - 인증 API Prefix: `/api/auth/...`
 - 게시판 API Prefix: `/api/board/...`
-- 응답은 가능하면 JSON을 사용합니다.
-- 비즈니스 오류는 기본적으로 아래 형식을 따릅니다.
+- 응답은 기본적으로 JSON을 사용합니다.
+- 비즈니스 오류는 아래 형식을 따릅니다.
 
 ```json
 {
@@ -30,7 +30,7 @@ Request
 
 ```json
 {
-  "name": "tester",
+  "nickname": "tester",
   "email": "tester@example.com",
   "password": "password123"
 }
@@ -44,12 +44,12 @@ Response `201`
   "message": "회원가입이 완료되었습니다.",
   "user": {
     "id": 1,
-    "name": "tester",
+    "nickname": "tester",
     "email": "tester@example.com",
     "memberRole": "ROLE_USER",
     "roles": ["ROLE_USER"]
   },
-  "token": null,
+  "accessToken": null,
   "refreshToken": null
 }
 ```
@@ -57,6 +57,7 @@ Response `201`
 규칙
 
 - 이미 가입된 이메일은 사용할 수 없습니다.
+- 이미 사용 중인 닉네임은 사용할 수 없습니다.
 - 이메일 인증이 완료된 상태여야 가입 가능합니다.
 - 가입 시 `ROLE_USER` 권한이 기본 부여됩니다.
 
@@ -79,16 +80,15 @@ Response `200`
 ```json
 {
   "success": true,
-  "message": "로그인에 성공했습니다.",
+  "accessToken": "eyJhbG...",
+  "refreshToken": "eyJhbG...",
   "user": {
     "id": 1,
-    "name": "tester",
+    "nickname": "tester",
     "email": "tester@example.com",
     "memberRole": "ROLE_USER",
     "roles": ["ROLE_USER"]
-  },
-  "token": "access-token",
-  "refreshToken": "refresh-token"
+  }
 }
 ```
 
@@ -97,8 +97,91 @@ Response `200`
 - JWT subject는 user id가 아니라 Redis 세션의 `public_id(UUID)`를 사용합니다.
 - Redis에는 `public_id -> user_id`, `public_id -> refreshToken` 이 저장됩니다.
 - JWT claim에는 `roles`가 포함됩니다.
+- 로그인 성공 시 `auth.tb_login_history`에 이력이 저장됩니다.
 
-### 3. 토큰 재발급
+### 3. 내 프로필 조회
+
+- Method: `GET`
+- URI: `/api/auth/me`
+- 인증: 필요
+
+Response `200`
+
+```json
+{
+  "id": 1,
+  "nickname": "tester",
+  "email": "tester@example.com",
+  "emailVerified": true,
+  "roles": ["ROLE_USER"],
+  "createdAt": "2026-04-01T00:00:00",
+  "lastLoginAt": "2026-04-08T12:00:00"
+}
+```
+
+### 4. 내 프로필 수정
+
+- Method: `PUT`
+- URI: `/api/auth/me`
+- 인증: 필요
+
+Request
+
+```json
+{
+  "nickname": "newNickname"
+}
+```
+
+Response `200`
+
+```json
+{
+  "id": 1,
+  "nickname": "newNickname",
+  "email": "tester@example.com",
+  "emailVerified": true,
+  "roles": ["ROLE_USER"],
+  "createdAt": "2026-04-01T00:00:00",
+  "lastLoginAt": "2026-04-08T12:00:00"
+}
+```
+
+규칙
+
+- 닉네임은 2자 이상 20자 이하여야 합니다.
+- 다른 사용자가 이미 사용 중인 닉네임으로는 변경할 수 없습니다.
+
+### 5. 비밀번호 변경
+
+- Method: `PUT`
+- URI: `/api/auth/me/password`
+- 인증: 필요
+
+Request
+
+```json
+{
+  "currentPassword": "old-password",
+  "newPassword": "new-password-123"
+}
+```
+
+Response `200`
+
+```json
+{
+  "success": true
+}
+```
+
+규칙
+
+- 현재 비밀번호가 일치해야 합니다.
+- 새 비밀번호는 8자 이상이어야 합니다.
+- 새 비밀번호는 현재 비밀번호와 달라야 합니다.
+
+### 6. 토큰 재발급
 
 - Method: `POST`
 - URI: `/api/auth/refresh`
@@ -121,7 +204,7 @@ Response `200`
 }
 ```
 
-### 4. 이메일 인증 코드 발송
+### 7. 이메일 인증 코드 발송
 
 - Method: `POST`
 - URI: `/api/auth/mail`
@@ -145,7 +228,7 @@ Response `200`
 }
 ```
 
-### 5. 이메일 인증 코드 검증
+### 8. 이메일 인증 코드 검증
 
 - Method: `POST`
 - URI: `/api/auth/mail/verify`
@@ -296,13 +379,26 @@ Response `200`
 
 규칙
 
-- 상세 조회 시 `view_count` 가 1 증가합니다.
+- 상세 조회 시 `view_count`가 1 증가합니다.
 
 ## Security Rules
 
-- `/auth/**`: 공개
-- `/board/**`: 공개
-- 그 외 경로는 인증 필요
+공개 경로
+
+- `/auth/login`
+- `/auth/signup`
+- `/auth/refresh`
+- `/auth/mail`
+- `/auth/mail/verify`
+- `/auth/google-login`
+- `/board/**`
+- `/health`
+
+인증 필요 경로
+
+- `/auth/me`
+- `/auth/me/password`
+- 그 외 공개로 명시되지 않은 모든 경로
 
 ## DB Mapping Rules
 
