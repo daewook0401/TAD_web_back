@@ -66,10 +66,12 @@ public class BoardService {
 
     @Transactional
     public BoardPostDetailResponse getPostDetail(Long postId) {
+        if (boardPostRepository.incrementViewCount(postId) == 0) {
+            throw new IllegalArgumentException("게시글을 찾을 수 없습니다.");
+        }
+
         BoardPost post = boardPostRepository.findByIdAndIsDeletedFalse(postId)
             .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
-
-        post.setViewCount(post.getViewCount() + 1);
         return BoardPostDetailResponse.from(post);
     }
 

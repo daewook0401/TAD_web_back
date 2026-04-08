@@ -24,7 +24,7 @@ public class MailService {
     private final UserRepository userRepository;
     private final JavaMailSender mailSender;
 
-    @Value("${spring.mail.username}")
+    @Value("${spring.mail.username:no-reply@tad.local}")
     private String fromEmail;
 
     @Value("${app.email-verification.code-minutes:3}")

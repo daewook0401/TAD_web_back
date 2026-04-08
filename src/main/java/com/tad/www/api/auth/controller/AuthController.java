@@ -2,8 +2,6 @@ package com.tad.www.api.auth.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -62,50 +60,12 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<?> refresh(@RequestBody TokenRefreshRequest request) {
-        try {
-            if (request == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("INVALID_REFRESH_TOKEN");
-            }
-
-            TokenResponse response = jwtRefreshService.rotateRefreshToken(request.getRefreshToken());
-            return ResponseEntity.ok(response);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+    public ResponseEntity<TokenResponse> refresh(@RequestBody TokenRefreshRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("INVALID_REFRESH_TOKEN");
         }
-    }
 
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<AuthResponse> handleIllegalArgument(IllegalArgumentException e) {
-        return ResponseEntity.badRequest()
-            .body(AuthResponse.builder()
-                .success(false)
-                .message(e.getMessage())
-                .build());
-    }
-
-    @ExceptionHandler(UnsupportedOperationException.class)
-    public ResponseEntity<AuthResponse> handleUnsupported(UnsupportedOperationException e) {
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)
-            .body(AuthResponse.builder()
-                .success(false)
-                .message(e.getMessage())
-                .build());
-    }
-
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<AuthResponse> handleValidation(MethodArgumentNotValidException e) {
-        String message = e.getBindingResult()
-            .getFieldErrors()
-            .stream()
-            .findFirst()
-            .map(error -> error.getDefaultMessage())
-            .orElse("요청값이 올바르지 않습니다.");
-
-        return ResponseEntity.badRequest()
-            .body(AuthResponse.builder()
-                .success(false)
-                .message(message)
-                .build());
+        TokenResponse response = jwtRefreshService.rotateRefreshToken(request.getRefreshToken());
+        return ResponseEntity.ok(response);
     }
 }

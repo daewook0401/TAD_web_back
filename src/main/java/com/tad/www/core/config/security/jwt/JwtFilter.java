@@ -2,6 +2,7 @@ package com.tad.www.core.config.security.jwt;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.http.HttpHeaders;
@@ -12,6 +13,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tad.www.api.auth.service.RefreshTokenRedisService;
 import com.tad.www.api.user.repository.UserRepository;
 
@@ -31,6 +33,7 @@ public class JwtFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
     private final RefreshTokenRedisService refreshTokenRedisService;
+    private final ObjectMapper objectMapper;
 
     @Override
     protected void doFilterInternal(
@@ -39,9 +42,9 @@ public class JwtFilter extends OncePerRequestFilter {
         FilterChain filterChain
     ) throws ServletException, IOException {
 
-        String path = request.getRequestURI();
+        String path = request.getServletPath();
 
-        if (path.contains("/auth/refresh")) {
+        if (isRefreshPath(path)) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -88,19 +91,38 @@ public class JwtFilter extends OncePerRequestFilter {
             } catch (RuntimeException e) {
                 SecurityContextHolder.clearContext();
 
-                response.setContentType(MediaType.TEXT_PLAIN_VALUE);
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-
-                if ("EXPIRED".equals(e.getMessage())) {
-                    response.getWriter().write("ACCESS_TOKEN_EXPIRED");
-                } else {
-                    response.getWriter().write("INVALID_TOKEN");
+                if (isPublicPath(path)) {
+                    filterChain.doFilter(request, response);
+                    return;
                 }
 
+                writeUnauthorizedResponse(response, "EXPIRED".equals(e.getMessage())
+                    ? "ACCESS_TOKEN_EXPIRED"
+                    : "INVALID_TOKEN");
                 return;
             }
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private boolean isRefreshPath(String path) {
+        return "/auth/refresh".equals(path);
+    }
+
+    private boolean isPublicPath(String path) {
+        return path.startsWith("/auth/") || "/auth".equals(path)
+            || path.startsWith("/board/") || "/board".equals(path)
+            || "/health".equals(path);
+    }
+
+    private void writeUnauthorizedResponse(HttpServletResponse response, String message) throws IOException {
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setCharacterEncoding("UTF-8");
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.getWriter().write(objectMapper.writeValueAsString(Map.of(
+            "success", false,
+            "message", message
+        )));
     }
 }

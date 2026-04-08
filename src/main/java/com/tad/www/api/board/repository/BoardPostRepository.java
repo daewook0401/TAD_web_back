@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -31,4 +32,13 @@ public interface BoardPostRepository extends JpaRepository<BoardPost, Long> {
 
     @EntityGraph(attributePaths = {"category", "author"})
     Optional<BoardPost> findByIdAndIsDeletedFalse(Long id);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+        update BoardPost p
+           set p.viewCount = p.viewCount + 1
+         where p.id = :id
+           and p.isDeleted = false
+        """)
+    int incrementViewCount(@Param("id") Long id);
 }
