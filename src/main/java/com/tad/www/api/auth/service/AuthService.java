@@ -8,18 +8,28 @@ import java.util.UUID;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
+import com.tad.www.api.auth.dto.request.ChangePasswordRequest;
 import com.tad.www.api.auth.dto.request.LoginRequest;
 import com.tad.www.api.auth.dto.request.SignupRequest;
+import com.tad.www.api.auth.dto.request.UpdateProfileRequest;
 import com.tad.www.api.auth.dto.response.AuthResponse;
 import com.tad.www.api.auth.dto.response.AuthUserResponse;
+import com.tad.www.api.auth.dto.response.ProfileResponse;
+import com.tad.www.api.auth.dto.response.SuccessResponse;
+import com.tad.www.api.auth.entity.LoginHistory;
 import com.tad.www.api.auth.entity.UserRole;
+import com.tad.www.api.auth.repository.LoginHistoryRepository;
 import com.tad.www.api.auth.repository.RoleRepository;
 import com.tad.www.api.auth.repository.UserRoleRepository;
 import com.tad.www.api.user.entity.User;
 import com.tad.www.api.user.repository.UserRepository;
 import com.tad.www.core.config.security.jwt.JwtUtil;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -31,6 +41,7 @@ public class AuthService {
     private final JwtUtil jwtUtil;
     private final RefreshTokenRedisService refreshTokenRedisService;
     private final EmailVerificationRedisService emailVerificationRedisService;
+    private final LoginHistoryRepository loginHistoryRepository;
     private final RoleRepository roleRepository;
     private final UserRoleRepository userRoleRepository;
 
@@ -94,6 +105,7 @@ public class AuthService {
         }
 
         user.setLastLoginAt(OffsetDateTime.now());
+        saveLoginHistory(user.getId());
         List<String> roles = userRoleRepository.findRoleNamesByUserId(user.getId());
 
         UUID publicId = UUID.randomUUID();
@@ -109,10 +121,51 @@ public class AuthService {
 
         return AuthResponse.builder()
             .success(true)
-            .message("로그인에 성공했습니다.")
             .user(AuthUserResponse.from(user, roles))
-            .token(accessToken)
+            .accessToken(accessToken)
             .refreshToken(refreshToken)
+            .build();
+    }
+
+    @Transactional(readOnly = true)
+    public ProfileResponse getMyProfile(User currentUser) {
+        User user = userRepository.findById(currentUser.getId())
+            .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+        List<String> roles = userRoleRepository.findRoleNamesByUserId(user.getId());
+        return ProfileResponse.from(user, roles);
+    }
+
+    @Transactional
+    public ProfileResponse updateMyProfile(User currentUser, UpdateProfileRequest request) {
+        User user = userRepository.findById(currentUser.getId())
+            .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        String normalizedNickname = request.getNickname().trim();
+        if (userRepository.existsByNicknameAndIdNot(normalizedNickname, user.getId())) {
+            throw new IllegalArgumentException("이미 사용 중인 닉네임입니다.");
+        }
+
+        user.setNickname(normalizedNickname);
+        List<String> roles = userRoleRepository.findRoleNamesByUserId(user.getId());
+        return ProfileResponse.from(user, roles);
+    }
+
+    @Transactional
+    public SuccessResponse changePassword(User currentUser, ChangePasswordRequest request) {
+        User user = userRepository.findById(currentUser.getId())
+            .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        if (user.getPasswordHash() == null || !passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
+            throw new IllegalArgumentException("현재 비밀번호가 올바르지 않습니다.");
+        }
+
+        if (passwordEncoder.matches(request.getNewPassword(), user.getPasswordHash())) {
+            throw new IllegalArgumentException("새 비밀번호는 현재 비밀번호와 달라야 합니다.");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        return SuccessResponse.builder()
+            .success(true)
             .build();
     }
 
@@ -126,5 +179,54 @@ public class AuthService {
 
     private String normalizeEmail(String email) {
         return email == null ? null : email.trim().toLowerCase();
+    }
+
+    private void saveLoginHistory(Long userId) {
+        HttpServletRequest request = currentRequest();
+
+        loginHistoryRepository.save(LoginHistory.builder()
+            .userId(userId)
+            .ipAddress(resolveClientIp(request))
+            .userAgent(resolveUserAgent(request))
+            .build());
+    }
+
+    private HttpServletRequest currentRequest() {
+        RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
+        if (attributes instanceof ServletRequestAttributes servletRequestAttributes) {
+            return servletRequestAttributes.getRequest();
+        }
+        return null;
+    }
+
+    private String resolveClientIp(HttpServletRequest request) {
+        if (request == null) {
+            return null;
+        }
+
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+            return forwardedFor.split(",")[0].trim();
+        }
+
+        String realIp = request.getHeader("X-Real-IP");
+        if (realIp != null && !realIp.isBlank()) {
+            return realIp.trim();
+        }
+
+        return request.getRemoteAddr();
+    }
+
+    private String resolveUserAgent(HttpServletRequest request) {
+        if (request == null) {
+            return null;
+        }
+
+        String userAgent = request.getHeader("User-Agent");
+        if (userAgent == null || userAgent.isBlank()) {
+            return null;
+        }
+
+        return userAgent.length() <= 500 ? userAgent : userAgent.substring(0, 500);
     }
 }
