@@ -14,11 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 @RequestMapping("/users")
 public class UserController {
 
-    // private final UserService userService;
-
     @PostMapping("/signup")
     public ResponseEntity<String> signup() {
-        
         return ResponseEntity.ok("회원가입 성공");
     }
 }

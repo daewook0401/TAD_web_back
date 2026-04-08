@@ -28,7 +28,7 @@ public class GlobalExceptionHandler {
             .stream()
             .findFirst()
             .map(error -> error.getDefaultMessage())
-            .orElse("?붿껌媛믪씠 ?щ컮瑜댁? ?딆뒿?덈떎.");
+            .orElse("요청값이 올바르지 않습니다.");
 
         return ResponseEntity.badRequest().body(Map.of(
             "success", false,
@@ -56,7 +56,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleUnexpected(Exception e) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
             "success", false,
-            "message", "?쒕쾭 ?대? ?ㅻ쪟媛 諛쒖깮?덉뒿?덈떎."
+            "message", "서버 내부 오류가 발생했습니다."
         ));
     }
 }

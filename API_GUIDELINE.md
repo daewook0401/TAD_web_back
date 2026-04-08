@@ -1,16 +1,16 @@
 # TAD Backend API Guideline
 
-이 문서는 현재 백엔드에 구현된 API를 기준으로, 이후 엔드포인트를 추가하거나 다른 작업자에게 위임할 때 참고할 수 있는 가이드라인이다.
+현재 백엔드에 구현된 API를 기준으로 정리한 문서입니다.
 
 ## Base Rules
 
 - Base URL: `http://localhost:8080`
-- 서버 `context-path`는 `/api` 이다.
-- 외부 노출 URI는 모두 `/api/...` 형태다.
+- 서버 `context-path`는 `/api` 입니다.
+- 실제 호출 URI는 모두 `/api/...` 형태입니다.
 - 인증 API Prefix: `/api/auth/...`
 - 게시판 API Prefix: `/api/board/...`
-- 응답은 가능하면 JSON을 사용한다.
-- 비즈니스 오류는 기본적으로 아래 형태를 따른다.
+- 응답은 가능하면 JSON을 사용합니다.
+- 비즈니스 오류는 기본적으로 아래 형식을 따릅니다.
 
 ```json
 {
@@ -25,7 +25,8 @@
 
 - Method: `POST`
 - URI: `/api/auth/signup`
-- Request
+
+Request
 
 ```json
 {
@@ -35,7 +36,7 @@
 }
 ```
 
-- Response `201`
+Response `201`
 
 ```json
 {
@@ -53,16 +54,18 @@
 }
 ```
 
-- 규칙
-  - 이메일 중복 불가
-  - 이메일 인증 완료 상태여야 가입 가능
-  - 가입 시 `auth.tb_user_role`에 `ROLE_USER` 자동 부여
+규칙
+
+- 이미 가입된 이메일은 사용할 수 없습니다.
+- 이메일 인증이 완료된 상태여야 가입 가능합니다.
+- 가입 시 `ROLE_USER` 권한이 기본 부여됩니다.
 
 ### 2. 로그인
 
 - Method: `POST`
 - URI: `/api/auth/login`
-- Request
+
+Request
 
 ```json
 {
@@ -71,7 +74,7 @@
 }
 ```
 
-- Response `200`
+Response `200`
 
 ```json
 {
@@ -89,16 +92,18 @@
 }
 ```
 
-- 규칙
-  - JWT subject는 DB 컬럼이 아닌 Redis 세션용 `public_id(UUID)`를 사용
-  - Redis에는 `public_id -> user_id`, `public_id -> refreshToken` 저장
-  - JWT claim에 `roles` 포함
+규칙
+
+- JWT subject는 user id가 아니라 Redis 세션의 `public_id(UUID)`를 사용합니다.
+- Redis에는 `public_id -> user_id`, `public_id -> refreshToken` 이 저장됩니다.
+- JWT claim에는 `roles`가 포함됩니다.
 
 ### 3. 토큰 재발급
 
 - Method: `POST`
 - URI: `/api/auth/refresh`
-- Request
+
+Request
 
 ```json
 {
@@ -106,7 +111,7 @@
 }
 ```
 
-- Response `200`
+Response `200`
 
 ```json
 {
@@ -120,7 +125,8 @@
 
 - Method: `POST`
 - URI: `/api/auth/mail`
-- Request
+
+Request
 
 ```json
 {
@@ -128,7 +134,7 @@
 }
 ```
 
-- Response `200`
+Response `200`
 
 ```json
 {
@@ -143,7 +149,8 @@
 
 - Method: `POST`
 - URI: `/api/auth/mail/verify`
-- Request
+
+Request
 
 ```json
 {
@@ -152,7 +159,7 @@
 }
 ```
 
-- Response `200`
+Response `200`
 
 ```json
 {
@@ -163,19 +170,20 @@
 }
 ```
 
-- 규칙
-  - 이메일 인증 상태는 Redis로 관리
-  - `auth.tb_email_auth`는 현재 히스토리성 테이블 기준으로만 유지
+규칙
+
+- 이메일 인증 상태는 Redis로 관리합니다.
+- `auth.tb_email_auth` 테이블은 현재 이력성 저장 용도입니다.
 
 ## Board APIs
 
-### 보드 종류
+### 게시판 분류
 
 - `lol`
 - `maple`
 - `free`
 
-카테고리 데이터 소스는 `board.tb_post_categories` 이다.
+카테고리 데이터 소스는 `board.tb_post_categories` 입니다.
 
 ### 1. 카테고리 조회
 
@@ -183,33 +191,17 @@
 - URI: `/api/board/categories`
 - 인증: 불필요
 
-- Response `200`
+Response `200`
 
 ```json
 [
   {
     "id": 1,
     "categoryKey": "lol",
-    "name": "롤",
+    "name": "리그오브레전드",
     "iconUrl": "https://drive.towardadiamond.com/tad/category-icons/lol.webp",
-    "summary": "롤 게시판",
+    "summary": "리그오브레전드 게시판",
     "displayOrder": 1
-  },
-  {
-    "id": 2,
-    "categoryKey": "maple",
-    "name": "메이플랜드",
-    "iconUrl": "https://drive.towardadiamond.com/tad/category-icons/maple.webp",
-    "summary": "메이플랜드 게시판",
-    "displayOrder": 2
-  },
-  {
-    "id": 3,
-    "categoryKey": "free",
-    "name": "자유",
-    "iconUrl": null,
-    "summary": "자유 게시판",
-    "displayOrder": 3
   }
 ]
 ```
@@ -219,19 +211,21 @@
 - Method: `GET`
 - URI: `/api/board/posts`
 - 인증: 불필요
-- Query
-  - `categoryKey`: 선택
-  - `postType`: 선택, `all | free | info`
-  - `page`: 선택, 기본 `0`
-  - `size`: 선택, 기본 `20`
 
-- Request Example
+Query
+
+- `categoryKey`: 선택
+- `postType`: 선택, `all | free | info`
+- `page`: 선택, 기본 `0`
+- `size`: 선택, 기본 `20`
+
+Request Example
 
 ```http
 GET /api/board/posts?categoryKey=lol&postType=free&page=0&size=20
 ```
 
-- Response `200`
+Response `200`
 
 ```json
 {
@@ -239,7 +233,7 @@ GET /api/board/posts?categoryKey=lol&postType=free&page=0&size=20
     {
       "id": 101,
       "categoryKey": "lol",
-      "categoryName": "롤",
+      "categoryName": "리그오브레전드",
       "title": "최신 메타 정리",
       "tag": "공략",
       "postType": "info",
@@ -260,14 +254,10 @@ GET /api/board/posts?categoryKey=lol&postType=free&page=0&size=20
 }
 ```
 
-- 규칙
-  - `postType` 데이터 소스는 `board.tb_post.post_type`
-  - 현재 값은 소문자 `free`, `info`
-  - `notice`는 별도 컬럼 `is_notice`
-  - 정렬 기준
-    - `is_notice DESC`
-    - `post_type ASC`
-    - `created_at DESC`
+규칙
+
+- `postType` 값은 `free`, `info` 입니다.
+- 정렬 기준은 `is_notice DESC`, `post_type ASC`, `created_at DESC` 입니다.
 
 ### 3. 게시글 상세 조회
 
@@ -275,20 +265,20 @@ GET /api/board/posts?categoryKey=lol&postType=free&page=0&size=20
 - URI: `/api/board/posts/{postId}`
 - 인증: 불필요
 
-- Request Example
+Request Example
 
 ```http
 GET /api/board/posts/101
 ```
 
-- Response `200`
+Response `200`
 
 ```json
 {
   "id": 101,
   "categoryId": 1,
   "categoryKey": "lol",
-  "categoryName": "롤",
+  "categoryName": "리그오브레전드",
   "title": "최신 메타 정리",
   "content": "게시글 본문 내용",
   "tag": "공략",
@@ -304,40 +294,25 @@ GET /api/board/posts/101
 }
 ```
 
-- 규칙
-  - 상세 조회 시 `view_count` 1 증가
+규칙
+
+- 상세 조회 시 `view_count` 가 1 증가합니다.
 
 ## Security Rules
 
-- 내부 시큐리티 매처 기준 `/auth/**`: 공개
-- 내부 시큐리티 매처 기준 `/board/**`: 공개
-- 그 외: 인증 필요
-
-JWT 인증 시 `roles` claim을 `GrantedAuthority`로 변환하므로, 이후 서버 권한 체크는 아래처럼 추가 가능하다.
-
-```java
-@PreAuthorize("hasRole('ADMIN')")
-@PreAuthorize("hasAuthority('ROLE_USER')")
-```
+- `/auth/**`: 공개
+- `/board/**`: 공개
+- 그 외 경로는 인증 필요
 
 ## DB Mapping Rules
 
 - 인증 스키마: `auth`
 - 게시판 스키마: `board`
-- 엔티티에는 스키마명을 반드시 명시한다.
+- 엔티티에 스키마명을 명시합니다.
 
-예시:
+예시
 
 ```java
 @Table(name = "tb_user", schema = "auth")
 @Table(name = "tb_post", schema = "board")
 ```
-
-## Follow-up Recommendation
-
-다음 구현 우선순위:
-
-1. 게시글 작성 API
-2. 댓글 목록/작성 API
-3. 게시글 좋아요 API
-4. 게시판 프론트 연동
