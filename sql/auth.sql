@@ -15,7 +15,7 @@ CREATE TABLE auth.tb_login_history (
     user_id           BIGINT NOT NULL,
     ip_address        VARCHAR(45),
     user_agent        VARCHAR(500),
-    logged_in_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- DROP TABLE auth.tb_email_auth;

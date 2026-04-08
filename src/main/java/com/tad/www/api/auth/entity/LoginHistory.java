@@ -40,6 +40,6 @@ public class LoginHistory {
     private String userAgent;
 
     @CreationTimestamp
-    @Column(name = "logged_in_at", nullable = false, updatable = false)
-    private OffsetDateTime loggedInAt;
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private OffsetDateTime createdAt;
 }
