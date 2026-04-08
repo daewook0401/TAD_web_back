@@ -10,4 +10,4 @@ CREATE TABLE auth.tb_email_auth (
     created_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-drop table auth.tb_email_auth;
+-- DROP TABLE auth.tb_email_auth;

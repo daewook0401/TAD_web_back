@@ -13,4 +13,4 @@ CREATE TABLE auth.tb_user (
     updated_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-drop table auth.tb_user;
+-- DROP TABLE auth.tb_user;
