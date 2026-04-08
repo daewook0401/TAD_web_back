@@ -22,7 +22,7 @@ public interface BoardPostRepository extends JpaRepository<BoardPost, Long> {
         from BoardPost p
         where p.isDeleted = false
           and (:categoryKey is null or p.category.categoryKey = :categoryKey)
-          and (:postType is null or lower(p.postType) = lower(:postType))
+          and (:postType is null or lower(p.postType) = :postType)
         """)
     Page<BoardPost> findVisiblePosts(
         @Param("categoryKey") String categoryKey,
