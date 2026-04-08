@@ -4,7 +4,6 @@ import java.time.Duration;
 
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
 
@@ -12,17 +11,41 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class EmailVerificationRedisService {
 
+    private static final String CODE_PREFIX = "auth:email:code:";
+    private static final String VERIFIED_PREFIX = "auth:email:verified:";
+
     private final StringRedisTemplate stringRedisTemplate;
 
-    public void save(String key, String value, Duration ttl){
-        stringRedisTemplate.opsForValue().set(key, value, ttl);
+    public void saveCode(String email, String code, Duration ttl) {
+        stringRedisTemplate.opsForValue().set(codeKey(email), code, ttl);
     }
 
-    public String get(String key){
-        return stringRedisTemplate.opsForValue().get(key);
+    public String getCode(String email) {
+        return stringRedisTemplate.opsForValue().get(codeKey(email));
     }
 
-    public void delete(String key){
-        stringRedisTemplate.delete(key);
+    public void markVerified(String email, Duration ttl) {
+        stringRedisTemplate.opsForValue().set(verifiedKey(email), "true", ttl);
+    }
+
+    public boolean isVerified(String email) {
+        return "true".equals(stringRedisTemplate.opsForValue().get(verifiedKey(email)));
+    }
+
+    public void clearCode(String email) {
+        stringRedisTemplate.delete(codeKey(email));
+    }
+
+    public void clear(String email) {
+        stringRedisTemplate.delete(codeKey(email));
+        stringRedisTemplate.delete(verifiedKey(email));
+    }
+
+    private String codeKey(String email) {
+        return CODE_PREFIX + email;
+    }
+
+    private String verifiedKey(String email) {
+        return VERIFIED_PREFIX + email;
     }
 }

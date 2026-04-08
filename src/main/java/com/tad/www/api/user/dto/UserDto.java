@@ -1,7 +1,6 @@
 package com.tad.www.api.user.dto;
 
 import java.time.OffsetDateTime;
-import java.util.UUID;
 
 import com.tad.www.api.user.entity.User;
 
@@ -16,7 +15,7 @@ import lombok.NoArgsConstructor;
 @Builder
 public class UserDto {
     private Long id;
-    private UUID publicId;
+    private String name;
     private String email;
     private String nickname;
     private String pictureUrl;
@@ -29,7 +28,7 @@ public class UserDto {
         if (u == null) return null;
         return UserDto.builder()
                 .id(u.getId())
-                .publicId(u.getPublicId())
+                .name(u.getNickname())
                 .email(u.getEmail())
                 .nickname(u.getNickname())
                 .pictureUrl(u.getPictureUrl())

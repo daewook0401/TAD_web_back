@@ -1,7 +1,6 @@
 package com.tad.www.api.user.dto;
 
 import java.time.OffsetDateTime;
-import java.util.UUID;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,7 +12,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class SignUpDto {
-    private UUID publicId;
     private String email;
     private Boolean emailVerified;
     private String nickname;

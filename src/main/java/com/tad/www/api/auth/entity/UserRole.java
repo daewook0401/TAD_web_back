@@ -23,8 +23,8 @@ import lombok.Setter;
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-@Table(name = "tb_email_auth", schema = "auth")
-public class Mail {
+@Table(name = "tb_user_role", schema = "auth")
+public class UserRole {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -33,17 +33,8 @@ public class Mail {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @Column(name = "email", nullable = false)
-    private String email;
-
-    @Column(name = "auth_code", nullable = false, length = 100)
-    private String authCode;
-
-    @Column(name = "expires_at", nullable = false)
-    private OffsetDateTime expiresAt;
-
-    @Column(name = "verified_at")
-    private OffsetDateTime verifiedAt;
+    @Column(name = "role_id", nullable = false)
+    private Long roleId;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

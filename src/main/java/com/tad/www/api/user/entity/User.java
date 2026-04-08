@@ -1,12 +1,8 @@
 package com.tad.www.api.user.entity;
 
 import java.time.OffsetDateTime;
-import java.util.UUID;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -26,26 +22,29 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "tb_users", schema = "user")
+@Table(name = "tb_user", schema = "auth")
 public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "public_id", nullable = false, unique = true)
-    private UUID publicId;
-
     @Column(nullable = false, unique = true, columnDefinition = "citext")
     private String email;
 
-    @Column(length = 50)
+    @Column(nullable = false, unique = true, length = 50)
     private String nickname;
 
-    @Column(name = "picture_url")
+    @Column(name = "password_hash")
+    private String passwordHash;
+
+    @Column(name = "profile_image_url")
     private String pictureUrl;
 
-    @Enumerated(EnumType.STRING)
+    @Column(name = "email_verified", nullable = false)
+    @Builder.Default
+    private Boolean emailVerified = false;
+
     @Column(nullable = false)
     private String status;
 
@@ -61,7 +60,6 @@ public class User {
     @PrePersist
     protected void onCreate() {
         OffsetDateTime now = OffsetDateTime.now();
-        if (publicId == null) publicId = UUID.randomUUID();
         if (createdAt == null) createdAt = now;
         if (updatedAt == null) updatedAt = now;
     }

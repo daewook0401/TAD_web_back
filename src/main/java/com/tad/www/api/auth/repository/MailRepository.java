@@ -7,5 +7,4 @@ import com.tad.www.api.auth.entity.Mail;
 
 @Repository
 public interface MailRepository extends JpaRepository<Mail, Long> {
-
 }
