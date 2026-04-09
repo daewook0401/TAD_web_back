@@ -175,11 +175,14 @@ public class BoardAttachmentService {
     }
 
     private String buildFileUrl(String objectKey) {
-        String endpoint = minioProperties.getEndpoint();
-        if (endpoint.endsWith("/")) {
-            endpoint = endpoint.substring(0, endpoint.length() - 1);
+        String baseUrl = minioProperties.getPublicUrl();
+        if (baseUrl == null || baseUrl.isBlank()) {
+            baseUrl = minioProperties.getEndpoint();
         }
-        return endpoint + "/" + minioProperties.getBucket() + "/" + objectKey;
+        if (baseUrl.endsWith("/")) {
+            baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
+        }
+        return baseUrl + "/" + minioProperties.getBucket() + "/" + objectKey;
     }
 
     private String sanitizeFileName(String fileName) {

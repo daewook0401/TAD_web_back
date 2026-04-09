@@ -112,11 +112,11 @@ public class BoardService {
 
     private String normalizePostType(String postType) {
         String normalized = normalize(postType);
-        if (normalized == null) {
-            throw new IllegalArgumentException("게시글 타입은 필수입니다.");
+        if (normalized == null || "all".equals(normalized)) {
+            return null;
         }
         if (!"free".equals(normalized) && !"info".equals(normalized)) {
-            throw new IllegalArgumentException("지원하지 않는 게시글 타입입니다.");
+            return null;
         }
         return normalized;
     }
