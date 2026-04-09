@@ -43,6 +43,7 @@ public class JwtFilter extends OncePerRequestFilter {
     ) throws ServletException, IOException {
 
         String path = request.getServletPath();
+        String method = request.getMethod();
 
         if (isRefreshPath(path)) {
             filterChain.doFilter(request, response);
@@ -91,7 +92,7 @@ public class JwtFilter extends OncePerRequestFilter {
             } catch (RuntimeException e) {
                 SecurityContextHolder.clearContext();
 
-                if (isPublicPath(path)) {
+                if (isPublicPath(path, method)) {
                     filterChain.doFilter(request, response);
                     return;
                 }
@@ -110,9 +111,9 @@ public class JwtFilter extends OncePerRequestFilter {
         return "/auth/refresh".equals(path);
     }
 
-    private boolean isPublicPath(String path) {
+    private boolean isPublicPath(String path, String method) {
         return path.startsWith("/auth/") || "/auth".equals(path)
-            || path.startsWith("/board/") || "/board".equals(path)
+            || (("GET".equalsIgnoreCase(method)) && (path.startsWith("/board/") || "/board".equals(path)))
             || "/health".equals(path);
     }
 
