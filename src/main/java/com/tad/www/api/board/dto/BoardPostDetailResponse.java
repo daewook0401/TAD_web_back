@@ -1,6 +1,7 @@
 package com.tad.www.api.board.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import com.tad.www.api.board.entity.BoardPost;
 
@@ -27,8 +28,9 @@ public class BoardPostDetailResponse {
     private String authorNickname;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private List<BoardAttachmentResponse> attachments;
 
-    public static BoardPostDetailResponse from(BoardPost post) {
+    public static BoardPostDetailResponse from(BoardPost post, List<BoardAttachmentResponse> attachments) {
         return BoardPostDetailResponse.builder()
             .id(post.getId())
             .categoryId(post.getCategory().getId())
@@ -46,6 +48,7 @@ public class BoardPostDetailResponse {
             .authorNickname(post.getAuthor().getNickname())
             .createdAt(post.getCreatedAt())
             .updatedAt(post.getUpdatedAt())
+            .attachments(attachments)
             .build();
     }
 

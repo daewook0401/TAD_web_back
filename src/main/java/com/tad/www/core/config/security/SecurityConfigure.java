@@ -43,6 +43,7 @@ public class SecurityConfigure {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/board/**").permitAll()
                 .requestMatchers(
                     "/auth/login",
                     "/auth/signup",
@@ -50,7 +51,6 @@ public class SecurityConfigure {
                     "/auth/mail",
                     "/auth/mail/verify",
                     "/auth/google-login",
-                    "/board/**",
                     "/health"
                 ).permitAll()
                 .anyRequest().authenticated()

@@ -29,44 +29,27 @@ import lombok.Setter;
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-@Table(name = "tb_post", schema = "board")
-public class BoardPost {
+@Table(name = "tb_comment", schema = "board")
+public class BoardComment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id", nullable = false)
-    private BoardCategory category;
+    @JoinColumn(name = "post_id", nullable = false)
+    private BoardPost post;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "author_id", nullable = false)
     private User author;
 
-    @Column(nullable = false, length = 200)
-    private String title;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_id")
+    private BoardComment parent;
 
     @Column(nullable = false)
     private String content;
-
-    @Column(length = 50)
-    private String tag;
-
-    @Column(name = "post_type", nullable = false, length = 20)
-    private String postType;
-
-    @Column(name = "view_count", nullable = false)
-    private Integer viewCount;
-
-    @Column(name = "like_count", nullable = false)
-    private Integer likeCount;
-
-    @Column(name = "reply_count", nullable = false)
-    private Integer replyCount;
-
-    @Column(name = "is_notice", nullable = false)
-    private Boolean isNotice;
 
     @Column(name = "is_deleted", nullable = false)
     private Boolean isDeleted;
