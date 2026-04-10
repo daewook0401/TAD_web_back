@@ -30,6 +30,8 @@ public class JwtRefreshService {
             throw new IllegalArgumentException("INVALID_REFRESH_TOKEN");
         }
 
+        refreshToken = refreshToken.trim();
+
         Claims claims = jwtUtil.parseJwt(refreshToken);
         if (!"refresh".equals(claims.get("type", String.class))) {
             throw new IllegalArgumentException("INVALID_REFRESH_TOKEN");

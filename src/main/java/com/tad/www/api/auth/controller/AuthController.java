@@ -89,11 +89,7 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<TokenResponse> refresh(@RequestBody TokenRefreshRequest request) {
-        if (request == null) {
-            throw new IllegalArgumentException("INVALID_REFRESH_TOKEN");
-        }
-
+    public ResponseEntity<TokenResponse> refresh(@Valid @RequestBody TokenRefreshRequest request) {
         TokenResponse response = jwtRefreshService.rotateRefreshToken(request.getRefreshToken());
         return ResponseEntity.ok(response);
     }
