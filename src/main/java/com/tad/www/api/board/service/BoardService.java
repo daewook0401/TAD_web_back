@@ -5,15 +5,20 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.tad.www.api.auth.repository.UserRoleRepository;
+import com.tad.www.api.board.dto.BoardAttachmentResponse;
 import com.tad.www.api.board.dto.BoardCategoryResponse;
 import com.tad.www.api.board.dto.BoardPostCreateRequest;
 import com.tad.www.api.board.dto.BoardPostDetailResponse;
 import com.tad.www.api.board.dto.BoardPostListResponse;
 import com.tad.www.api.board.dto.BoardPostSummaryResponse;
+import com.tad.www.api.board.dto.BoardPostUpdateRequest;
+import com.tad.www.api.board.dto.SuccessResponse;
 import com.tad.www.api.board.entity.BoardCategory;
 import com.tad.www.api.board.entity.BoardPost;
 import com.tad.www.api.board.repository.BoardCategoryRepository;
@@ -29,6 +34,7 @@ public class BoardService {
     private final BoardCategoryRepository boardCategoryRepository;
     private final BoardPostRepository boardPostRepository;
     private final BoardAttachmentService boardAttachmentService;
+    private final UserRoleRepository userRoleRepository;
 
     @Transactional(readOnly = true)
     public List<BoardCategoryResponse> getCategories() {
@@ -77,6 +83,7 @@ public class BoardService {
 
         BoardPost post = boardPostRepository.findByIdAndIsDeletedFalse(postId)
             .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
+
         return BoardPostDetailResponse.from(post, boardAttachmentService.getPostAttachments(postId));
     }
 
@@ -106,6 +113,61 @@ public class BoardService {
         );
     }
 
+    @Transactional
+    public BoardPostDetailResponse updatePost(
+        Long postId,
+        User currentUser,
+        BoardPostUpdateRequest request,
+        List<MultipartFile> files
+    ) {
+        BoardPost post = boardPostRepository.findByIdAndIsDeletedFalse(postId)
+            .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
+
+        ensureWritableUser(post, currentUser);
+
+        BoardCategory category = boardCategoryRepository.findById(request.getCategoryId())
+            .orElseThrow(() -> new IllegalArgumentException("카테고리를 찾을 수 없습니다."));
+
+        post.setCategory(category);
+        post.setTitle(request.getTitle().trim());
+        post.setContent(request.getContent().trim());
+        post.setTag(normalizeNullableText(request.getTag()));
+        post.setPostType(normalizePostType(request.getPostType()));
+        post.setIsNotice(Boolean.TRUE.equals(request.getNotice()));
+
+        boardAttachmentService.storePostAttachments(post, files);
+
+        List<BoardAttachmentResponse> attachments = boardAttachmentService.getPostAttachments(postId);
+        return BoardPostDetailResponse.from(post, attachments);
+    }
+
+    @Transactional
+    public SuccessResponse deletePost(Long postId, User currentUser) {
+        BoardPost post = boardPostRepository.findByIdAndIsDeletedFalse(postId)
+            .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
+
+        ensureWritableUser(post, currentUser);
+        post.setIsDeleted(true);
+
+        return SuccessResponse.builder()
+            .success(true)
+            .build();
+    }
+
+    private void ensureWritableUser(BoardPost post, User currentUser) {
+        if (post.getAuthor().getId().equals(currentUser.getId())) {
+            return;
+        }
+
+        boolean isAdmin = userRoleRepository.findRoleNamesByUserId(currentUser.getId())
+            .stream()
+            .anyMatch("ROLE_ADMIN"::equals);
+
+        if (!isAdmin) {
+            throw new AccessDeniedException("게시글을 수정 또는 삭제할 권한이 없습니다.");
+        }
+    }
+
     private String normalize(String value) {
         return value == null || value.isBlank() ? null : value.trim().toLowerCase();
     }
@@ -125,6 +187,7 @@ public class BoardService {
         if (value == null) {
             return null;
         }
+
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
     }

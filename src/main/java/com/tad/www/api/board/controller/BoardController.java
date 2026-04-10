@@ -24,6 +24,7 @@ import com.tad.www.api.board.dto.BoardLikeResponse;
 import com.tad.www.api.board.dto.BoardPostCreateRequest;
 import com.tad.www.api.board.dto.BoardPostDetailResponse;
 import com.tad.www.api.board.dto.BoardPostListResponse;
+import com.tad.www.api.board.dto.BoardPostUpdateRequest;
 import com.tad.www.api.board.dto.SuccessResponse;
 import com.tad.www.api.board.service.BoardCommentService;
 import com.tad.www.api.board.service.BoardLikeService;
@@ -69,6 +70,24 @@ public class BoardController {
         @RequestPart(value = "files", required = false) List<MultipartFile> files
     ) {
         return ResponseEntity.ok(boardService.createPost(currentUser, request, files));
+    }
+
+    @PutMapping("/posts/{postId}")
+    public ResponseEntity<BoardPostDetailResponse> updatePost(
+        @PathVariable Long postId,
+        @AuthenticationPrincipal User currentUser,
+        @Valid @RequestPart("request") BoardPostUpdateRequest request,
+        @RequestPart(value = "files", required = false) List<MultipartFile> files
+    ) {
+        return ResponseEntity.ok(boardService.updatePost(postId, currentUser, request, files));
+    }
+
+    @DeleteMapping("/posts/{postId}")
+    public ResponseEntity<SuccessResponse> deletePost(
+        @PathVariable Long postId,
+        @AuthenticationPrincipal User currentUser
+    ) {
+        return ResponseEntity.ok(boardService.deletePost(postId, currentUser));
     }
 
     @GetMapping("/posts/{postId}/comments")
