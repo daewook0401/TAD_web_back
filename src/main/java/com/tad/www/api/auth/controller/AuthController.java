@@ -2,17 +2,20 @@ package com.tad.www.api.auth.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.tad.www.api.auth.dto.request.ChangePasswordRequest;
 import com.tad.www.api.auth.dto.request.GoogleLoginRequest;
 import com.tad.www.api.auth.dto.request.LoginRequest;
+import com.tad.www.api.auth.dto.request.LogoutRequest;
 import com.tad.www.api.auth.dto.request.MailSendRequest;
 import com.tad.www.api.auth.dto.request.MailVerifyRequest;
 import com.tad.www.api.auth.dto.request.SignupRequest;
@@ -60,6 +63,15 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<SuccessResponse> logout(
+        @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization,
+        @RequestBody(required = false) LogoutRequest request
+    ) {
+        String refreshToken = request == null ? null : request.getRefreshToken();
+        return ResponseEntity.ok(authService.logout(authorization, refreshToken));
     }
 
     @GetMapping("/me")
