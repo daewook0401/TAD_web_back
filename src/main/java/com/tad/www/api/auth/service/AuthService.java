@@ -29,6 +29,7 @@ import com.tad.www.api.user.entity.User;
 import com.tad.www.api.user.repository.UserRepository;
 import com.tad.www.core.config.security.jwt.JwtUtil;
 
+import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
@@ -127,6 +128,15 @@ public class AuthService {
             .build();
     }
 
+    public SuccessResponse logout(String authorization, String refreshToken) {
+        resolvePublicId(authorization, refreshToken)
+            .ifPresent(refreshTokenRedisService::delete);
+
+        return SuccessResponse.builder()
+            .success(true)
+            .build();
+    }
+
     @Transactional(readOnly = true)
     public ProfileResponse getMyProfile(User currentUser) {
         User user = userRepository.findById(currentUser.getId())
@@ -179,6 +189,40 @@ public class AuthService {
 
     private String normalizeEmail(String email) {
         return email == null ? null : email.trim().toLowerCase();
+    }
+
+    private java.util.Optional<UUID> resolvePublicId(String authorization, String refreshToken) {
+        java.util.Optional<UUID> accessPublicId = extractPublicIdFromAuthorization(authorization);
+        if (accessPublicId.isPresent()) {
+            return accessPublicId;
+        }
+
+        return extractPublicIdFromToken(refreshToken, "refresh");
+    }
+
+    private java.util.Optional<UUID> extractPublicIdFromAuthorization(String authorization) {
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return java.util.Optional.empty();
+        }
+
+        return extractPublicIdFromToken(authorization.substring(7), "access");
+    }
+
+    private java.util.Optional<UUID> extractPublicIdFromToken(String token, String expectedType) {
+        if (token == null || token.isBlank()) {
+            return java.util.Optional.empty();
+        }
+
+        try {
+            Claims claims = jwtUtil.parseJwt(token.trim());
+            if (!expectedType.equals(claims.get("type", String.class))) {
+                return java.util.Optional.empty();
+            }
+
+            return java.util.Optional.of(UUID.fromString(claims.getSubject()));
+        } catch (RuntimeException e) {
+            return java.util.Optional.empty();
+        }
     }
 
     private void saveLoginHistory(Long userId, String loginType, String loginResult) {
