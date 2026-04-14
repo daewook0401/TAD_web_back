@@ -181,10 +181,10 @@ public class AuthService {
 
     public AuthResponse googleLogin(String credentialToken) {
         if (credentialToken == null || credentialToken.isBlank()) {
-            throw new IllegalArgumentException("Google credential token is required.");
+            throw new IllegalArgumentException("INVALID_GOOGLE_TOKEN");
         }
 
-        throw new UnsupportedOperationException("Google 로그인 검증 로직은 아직 구현되지 않았습니다.");
+        throw new UnsupportedOperationException("GOOGLE_LOGIN_NOT_ENABLED");
     }
 
     private String normalizeEmail(String email) {
