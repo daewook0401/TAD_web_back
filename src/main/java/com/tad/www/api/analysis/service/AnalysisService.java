@@ -5,6 +5,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.tad.www.api.analysis.dto.AnalysisDraftPlayerUpdateRequest;
 import com.tad.www.api.analysis.dto.AnalysisDraftTeamUpdateRequest;
 import com.tad.www.api.analysis.dto.AnalysisDraftUpdateRequest;
+import com.tad.www.api.analysis.dto.AnalysisPlayerRankingResponse;
 import com.tad.www.api.analysis.dto.AnalysisRecordSummaryResponse;
 import com.tad.www.api.analysis.dto.AnalyzeUploadResponse;
 import com.tad.www.api.analysis.entity.AnalysisGame;
@@ -77,6 +79,43 @@ public class AnalysisService {
     public AnalyzeUploadResponse getMyRecordDetail(Long gameId, User currentUser) {
         AnalysisGame game = getOwnedGame(gameId, currentUser);
         return buildDetailResponse(game);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AnalysisPlayerRankingResponse> getPlayerRankings(String keyword) {
+        String normalizedKeyword = normalizeNullableText(keyword);
+
+        List<AnalysisPlayerRankingResponse> rankings = analysisGamePlayerStatRepository.findPlayerRankings(normalizedKeyword)
+            .stream()
+            .map(projection -> AnalysisPlayerRankingResponse.builder()
+                .playerName(projection.getPlayerName())
+                .wins(projection.getWins())
+                .losses(projection.getLosses())
+                .totalGames(projection.getTotalGames())
+                .winRate(projection.getWinRate())
+                .averageKills(projection.getAverageKills())
+                .averageDeaths(projection.getAverageDeaths())
+                .averageAssists(projection.getAverageAssists())
+                .averageCs(projection.getAverageCs())
+                .averageGold(projection.getAverageGold())
+                .build())
+            .toList();
+
+        return IntStream.range(0, rankings.size())
+            .mapToObj(index -> AnalysisPlayerRankingResponse.builder()
+                .rank(index + 1)
+                .playerName(rankings.get(index).getPlayerName())
+                .wins(rankings.get(index).getWins())
+                .losses(rankings.get(index).getLosses())
+                .totalGames(rankings.get(index).getTotalGames())
+                .winRate(rankings.get(index).getWinRate())
+                .averageKills(rankings.get(index).getAverageKills())
+                .averageDeaths(rankings.get(index).getAverageDeaths())
+                .averageAssists(rankings.get(index).getAverageAssists())
+                .averageCs(rankings.get(index).getAverageCs())
+                .averageGold(rankings.get(index).getAverageGold())
+                .build())
+            .toList();
     }
 
     @Transactional

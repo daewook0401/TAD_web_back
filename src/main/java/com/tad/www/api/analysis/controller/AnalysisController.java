@@ -13,9 +13,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.tad.www.api.analysis.dto.AnalysisDraftUpdateRequest;
+import com.tad.www.api.analysis.dto.AnalysisPlayerRankingResponse;
 import com.tad.www.api.analysis.dto.AnalysisRecordSummaryResponse;
 import com.tad.www.api.analysis.dto.AnalyzeUploadResponse;
 import com.tad.www.api.analysis.service.AnalysisService;
@@ -43,6 +45,13 @@ public class AnalysisController {
     @GetMapping("/my-records")
     public ResponseEntity<List<AnalysisRecordSummaryResponse>> getMyRecords(@AuthenticationPrincipal User currentUser) {
         return ResponseEntity.ok(analysisService.getMyRecords(currentUser));
+    }
+
+    @GetMapping("/rankings")
+    public ResponseEntity<List<AnalysisPlayerRankingResponse>> getPlayerRankings(
+        @RequestParam(value = "keyword", required = false) String keyword
+    ) {
+        return ResponseEntity.ok(analysisService.getPlayerRankings(keyword));
     }
 
     @GetMapping("/{gameId}")
