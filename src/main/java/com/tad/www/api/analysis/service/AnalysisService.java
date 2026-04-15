@@ -8,6 +8,8 @@ import java.util.Map;
 
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -51,11 +53,11 @@ public class AnalysisService {
             .bucket(storedImage.bucket())
             .objectKey(storedImage.objectKey())
             .screenshotUrl(storedImage.fileUrl())
-            .winner("pending")
+            .winner(null)
             .status(STATUS_PROCESSING)
             .build());
 
-        analysisProcessingService.processDraftAsync(savedGame.getId(), storedImage.bucket(), storedImage.objectKey());
+        dispatchDraftProcessing(savedGame.getId(), storedImage.bucket(), storedImage.objectKey());
 
         return buildDetailResponse(savedGame);
     }
@@ -162,6 +164,20 @@ public class AnalysisService {
         List<AnalyzeUploadResponse.PlayerStatResponse> team1Players = mapTeamStats(stats, "team1");
         List<AnalyzeUploadResponse.PlayerStatResponse> team2Players = mapTeamStats(stats, "team2");
         return AnalyzeUploadResponse.from(game, team1Players, team2Players);
+    }
+
+    private void dispatchDraftProcessing(Long gameId, String bucket, String objectKey) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            analysisProcessingService.processDraftAsync(gameId, bucket, objectKey);
+            return;
+        }
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                analysisProcessingService.processDraftAsync(gameId, bucket, objectKey);
+            }
+        });
     }
 
     private List<AnalyzeUploadResponse.PlayerStatResponse> mapTeamStats(List<AnalysisGamePlayerStat> stats, String teamKey) {

@@ -26,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class AnalysisProcessingService {
 
+    public static final String ANALYSIS_TASK_EXECUTOR = "analysisTaskExecutor";
     private static final String STATUS_DRAFT = "DRAFT";
     private static final String STATUS_FAILED = "FAILED";
 
@@ -33,11 +34,17 @@ public class AnalysisProcessingService {
     private final AnalysisGamePlayerStatRepository analysisGamePlayerStatRepository;
     private final RestClient analysisRestClient;
 
-    @Async
+    @Async(ANALYSIS_TASK_EXECUTOR)
     @Transactional
     public void processDraftAsync(Long gameId, String bucket, String objectKey) {
         AnalysisGame game = analysisGameRepository.findById(gameId).orElse(null);
         if (game == null) {
+            log.warn(
+                "Skipping async analysis processing because game {} was not found (bucket={}, objectKey={})",
+                gameId,
+                bucket,
+                objectKey
+            );
             return;
         }
 
