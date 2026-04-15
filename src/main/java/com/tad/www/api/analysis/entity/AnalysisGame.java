@@ -49,7 +49,7 @@ public class AnalysisGame {
     @Column(name = "screenshot_url", nullable = false)
     private String screenshotUrl;
 
-    @Column(nullable = false, length = 10)
+    @Column(length = 10)
     private String winner;
 
     @Column(nullable = false, length = 20)
