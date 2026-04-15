@@ -73,6 +73,7 @@ public class SecurityConfigure {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/board/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/analyze/rankings").permitAll()
                 .requestMatchers(
                     "/auth/login",
                     "/auth/signup",
