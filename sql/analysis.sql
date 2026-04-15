@@ -9,11 +9,18 @@ CREATE TABLE IF NOT EXISTS analysis.tb_player (
 
 CREATE TABLE IF NOT EXISTS analysis.tb_game (
     id BIGSERIAL PRIMARY KEY,
+    uploader_id BIGINT,
     bucket VARCHAR(100) NOT NULL,
     object_key VARCHAR(500) NOT NULL UNIQUE,
     screenshot_url TEXT NOT NULL,
     winner VARCHAR(10) NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    status VARCHAR(20) NOT NULL DEFAULT 'DRAFT',
+    confirmed_at TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_game_uploader
+        FOREIGN KEY (uploader_id) REFERENCES auth.tb_user(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS analysis.tb_game_player_stat (
@@ -44,6 +51,21 @@ ON analysis.tb_game_player_stat (game_id);
 CREATE INDEX IF NOT EXISTS idx_game_player_stat_player
 ON analysis.tb_game_player_stat (player_id);
 
+CREATE INDEX IF NOT EXISTS idx_game_uploader_created_at
+ON analysis.tb_game (uploader_id, created_at DESC);
+
+ALTER TABLE analysis.tb_game
+ADD COLUMN IF NOT EXISTS uploader_id BIGINT;
+
+ALTER TABLE analysis.tb_game
+ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'DRAFT';
+
+ALTER TABLE analysis.tb_game
+ADD COLUMN IF NOT EXISTS confirmed_at TIMESTAMP;
+
+ALTER TABLE analysis.tb_game
+ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;
+
 CREATE OR REPLACE FUNCTION analysis.set_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -52,9 +74,25 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS trg_analysis_player_updated_at ON analysis.tb_player;
-
 CREATE TRIGGER trg_analysis_player_updated_at
 BEFORE UPDATE ON analysis.tb_player
 FOR EACH ROW
 EXECUTE FUNCTION analysis.set_updated_at();
+
+CREATE TRIGGER trg_analysis_game_updated_at
+BEFORE UPDATE ON analysis.tb_game
+FOR EACH ROW
+EXECUTE FUNCTION analysis.set_updated_at();
+
+-- DROP
+
+-- DROP TRIGGER IF EXISTS trg_analysis_game_updated_at ON analysis.tb_game;
+-- DROP TRIGGER IF EXISTS trg_analysis_player_updated_at ON analysis.tb_player;
+
+-- DROP FUNCTION IF EXISTS analysis.set_updated_at();
+
+-- DROP TABLE IF EXISTS analysis.tb_game_player_stat;
+-- DROP TABLE IF EXISTS analysis.tb_game;
+-- DROP TABLE IF EXISTS analysis.tb_player;
+
+-- DROP SCHEMA IF EXISTS analysis;
