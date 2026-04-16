@@ -93,7 +93,7 @@ class BoardCommentServiceTest {
 
         assertThatThrownBy(() -> boardCommentService.updateComment(1L, user(2L), request))
             .isInstanceOf(AccessDeniedException.class)
-            .hasMessage("댓글을 수정 또는 삭제할 권한이 없습니다.");
+            .hasMessage("댓글을 수정하거나 삭제할 권한이 없습니다.");
     }
 
     private BoardPost boardPost(Long id) {
