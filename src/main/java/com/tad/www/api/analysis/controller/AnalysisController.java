@@ -64,6 +64,11 @@ public class AnalysisController {
         return ResponseEntity.ok(analysisService.getPlayerRecords(playerName));
     }
 
+    @GetMapping("/records/{gameId}")
+    public ResponseEntity<AnalyzeUploadResponse> getConfirmedRecordDetail(@PathVariable Long gameId) {
+        return ResponseEntity.ok(analysisService.getConfirmedRecordDetail(gameId));
+    }
+
     @GetMapping("/{gameId}")
     public ResponseEntity<AnalyzeUploadResponse> getMyRecordDetail(
         @PathVariable Long gameId,

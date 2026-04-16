@@ -18,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.tad.www.api.analysis.dto.AnalysisPlayerRankingResponse;
 import com.tad.www.api.analysis.dto.AnalysisPlayerRecordResponse;
+import com.tad.www.api.analysis.dto.AnalyzeUploadResponse;
 import com.tad.www.api.analysis.entity.AnalysisGame;
 import com.tad.www.api.analysis.entity.AnalysisGamePlayerStat;
 import com.tad.www.api.analysis.entity.AnalysisPlayer;
@@ -122,6 +123,46 @@ class AnalysisServiceTest {
         assertThatThrownBy(() -> analysisService.getPlayerRecords(" "))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessage("playerName은 필수입니다.");
+    }
+
+    @Test
+    void getConfirmedRecordDetailReturnsFullGameDetail() {
+        AnalysisGame game = AnalysisGame.builder()
+            .id(21L)
+            .status("CONFIRMED")
+            .winner("team1")
+            .bucket("tad")
+            .objectKey("analysis/games/game.png")
+            .screenshotUrl("https://example.com/game.png")
+            .createdAt(LocalDateTime.of(2026, 4, 16, 11, 0))
+            .confirmedAt(LocalDateTime.of(2026, 4, 16, 11, 5))
+            .build();
+        AnalysisGamePlayerStat stat = AnalysisGamePlayerStat.builder()
+            .id(200L)
+            .game(game)
+            .playerNameSnapshot("Faker")
+            .teamKey("team1")
+            .slotNumber(1)
+            .kills(10)
+            .deaths(2)
+            .assists(7)
+            .cs(250)
+            .gold(16000)
+            .isWinner(true)
+            .build();
+
+        when(analysisGameRepository.findByIdAndStatus(21L, "CONFIRMED")).thenReturn(java.util.Optional.of(game));
+        when(analysisGamePlayerStatRepository.findByGameIdOrderByTeamKeyAscSlotNumberAsc(21L)).thenReturn(List.of(stat));
+
+        AnalyzeUploadResponse response = analysisService.getConfirmedRecordDetail(21L);
+
+        assertThat(response.getGameNumber()).isEqualTo(21L);
+        assertThat(response.getTeam1().players()).singleElement()
+            .satisfies(player -> {
+                assertThat(player.getName()).isEqualTo("Faker");
+                assertThat(player.getKills()).isEqualTo(10);
+                assertThat(player.getWinner()).isTrue();
+            });
     }
 
     private AnalysisPlayerRankingProjection projection(

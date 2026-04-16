@@ -86,6 +86,14 @@ public class AnalysisService {
     }
 
     @Transactional(readOnly = true)
+    public AnalyzeUploadResponse getConfirmedRecordDetail(Long gameId) {
+        AnalysisGame game = analysisGameRepository.findByIdAndStatus(gameId, STATUS_CONFIRMED)
+            .orElseThrow(() -> new IllegalArgumentException("확정된 경기 기록을 찾을 수 없습니다."));
+
+        return buildDetailResponse(game);
+    }
+
+    @Transactional(readOnly = true)
     public List<AnalysisPlayerRankingResponse> getPlayerRankings(String keyword, Long minGames, Integer limit) {
         String normalizedKeyword = normalizeNullableText(keyword);
         long normalizedMinGames = minGames == null || minGames < 1 ? DEFAULT_MIN_GAMES : minGames;
