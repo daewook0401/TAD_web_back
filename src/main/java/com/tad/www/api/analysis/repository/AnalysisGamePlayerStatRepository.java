@@ -19,11 +19,14 @@ public interface AnalysisGamePlayerStatRepository extends JpaRepository<Analysis
         FROM AnalysisGamePlayerStat s
         JOIN FETCH s.game g
         LEFT JOIN FETCH s.player p
-        WHERE g.status = 'CONFIRMED'
+        WHERE g.status = :status
           AND LOWER(COALESCE(p.playerName, s.playerNameSnapshot)) = LOWER(:playerName)
         ORDER BY COALESCE(g.confirmedAt, g.createdAt) DESC, g.id DESC
         """)
-    List<AnalysisGamePlayerStat> findConfirmedRecordsByPlayerName(@Param("playerName") String playerName);
+    List<AnalysisGamePlayerStat> findRecordsByPlayerNameAndStatus(
+        @Param("playerName") String playerName,
+        @Param("status") String status
+    );
 
     @Query(value = """
         SELECT

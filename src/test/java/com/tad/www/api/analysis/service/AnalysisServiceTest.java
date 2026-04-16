@@ -104,7 +104,7 @@ class AnalysisServiceTest {
             .isWinner(true)
             .build();
 
-        when(analysisGamePlayerStatRepository.findConfirmedRecordsByPlayerName("Faker"))
+        when(analysisGamePlayerStatRepository.findRecordsByPlayerNameAndStatus("Faker", "CONFIRMED"))
             .thenReturn(List.of(stat));
 
         List<AnalysisPlayerRecordResponse> records = analysisService.getPlayerRecords(" Faker ");

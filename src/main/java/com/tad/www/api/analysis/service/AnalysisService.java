@@ -145,7 +145,7 @@ public class AnalysisService {
             throw new IllegalArgumentException("playerName은 필수입니다.");
         }
 
-        return analysisGamePlayerStatRepository.findConfirmedRecordsByPlayerName(normalizedPlayerName)
+        return analysisGamePlayerStatRepository.findRecordsByPlayerNameAndStatus(normalizedPlayerName, STATUS_CONFIRMED)
             .stream()
             .map(AnalysisPlayerRecordResponse::from)
             .toList();
