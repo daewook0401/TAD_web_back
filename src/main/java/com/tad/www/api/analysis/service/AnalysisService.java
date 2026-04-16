@@ -96,6 +96,7 @@ public class AnalysisService {
     @Transactional(readOnly = true)
     public List<AnalysisPlayerRankingResponse> getPlayerRankings(String keyword, Long minGames, Integer limit) {
         String normalizedKeyword = normalizeNullableText(keyword);
+        String compactKeyword = compactSearchText(normalizedKeyword);
         long normalizedMinGames = minGames == null || minGames < 1 ? DEFAULT_MIN_GAMES : minGames;
         int normalizedLimit = limit == null || limit < 1
             ? DEFAULT_RANKING_LIMIT
@@ -103,6 +104,7 @@ public class AnalysisService {
 
         List<AnalysisPlayerRankingResponse> rankings = analysisGamePlayerStatRepository.findPlayerRankings(
                 normalizedKeyword,
+                compactKeyword,
                 normalizedMinGames,
                 normalizedLimit
             )
@@ -145,7 +147,10 @@ public class AnalysisService {
             throw new IllegalArgumentException("playerName은 필수입니다.");
         }
 
-        return analysisGamePlayerStatRepository.findRecordsByPlayerNameAndStatus(normalizedPlayerName, STATUS_CONFIRMED)
+        return analysisGamePlayerStatRepository.findRecordsByPlayerNameAndStatus(
+                compactSearchText(normalizedPlayerName),
+                STATUS_CONFIRMED
+            )
             .stream()
             .map(AnalysisPlayerRecordResponse::from)
             .toList();
@@ -305,5 +310,14 @@ public class AnalysisService {
 
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private String compactSearchText(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        String compacted = value.replaceAll("\\s+", "").toLowerCase();
+        return compacted.isEmpty() ? null : compacted;
     }
 }

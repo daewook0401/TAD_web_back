@@ -51,7 +51,7 @@ class AnalysisServiceTest {
 
     @Test
     void getPlayerRankingsAssignsSequentialRanksAndUsesDefaults() {
-        when(analysisGamePlayerStatRepository.findPlayerRankings(eq(null), eq(1L), eq(100)))
+        when(analysisGamePlayerStatRepository.findPlayerRankings(eq(null), eq(null), eq(1L), eq(100)))
             .thenReturn(List.of(
                 projection("Faker", 10L, 2L, 12L, 83, "8.5", "2.1", "9.4", "221.3", "15444.0"),
                 projection("Oner", 8L, 4L, 12L, 67, "4.3", "3.0", "10.0", "180.5", "13200.0")
@@ -68,13 +68,13 @@ class AnalysisServiceTest {
 
     @Test
     void getPlayerRankingsNormalizesMinGamesAndClampsLimit() {
-        when(analysisGamePlayerStatRepository.findPlayerRankings(eq("ker"), eq(1L), eq(300)))
+        when(analysisGamePlayerStatRepository.findPlayerRankings(eq("ker"), eq("ker"), eq(1L), eq(300)))
             .thenReturn(List.of(projection("Keria", 7L, 2L, 9L, 78, "2.0", "1.8", "13.4", "45.0", "9800.0")));
 
         List<AnalysisPlayerRankingResponse> rankings = analysisService.getPlayerRankings(" ker ", 0L, 999);
 
         assertThat(rankings).singleElement().extracting(AnalysisPlayerRankingResponse::getPlayerName).isEqualTo("Keria");
-        verify(analysisGamePlayerStatRepository).findPlayerRankings("ker", 1L, 300);
+        verify(analysisGamePlayerStatRepository).findPlayerRankings("ker", "ker", 1L, 300);
     }
 
     @Test
@@ -104,7 +104,7 @@ class AnalysisServiceTest {
             .isWinner(true)
             .build();
 
-        when(analysisGamePlayerStatRepository.findRecordsByPlayerNameAndStatus("Faker", "CONFIRMED"))
+        when(analysisGamePlayerStatRepository.findRecordsByPlayerNameAndStatus("faker", "CONFIRMED"))
             .thenReturn(List.of(stat));
 
         List<AnalysisPlayerRecordResponse> records = analysisService.getPlayerRecords(" Faker ");
@@ -116,6 +116,16 @@ class AnalysisServiceTest {
                 assertThat(record.getResult()).isEqualTo("WIN");
                 assertThat(record.getKills()).isEqualTo(8);
             });
+    }
+
+    @Test
+    void getPlayerRecordsCompactsWhitespaceForLookup() {
+        when(analysisGamePlayerStatRepository.findRecordsByPlayerNameAndStatus("네말이다맞아", "CONFIRMED"))
+            .thenReturn(List.of());
+
+        analysisService.getPlayerRecords(" 네 말이 다 맞아 ");
+
+        verify(analysisGamePlayerStatRepository).findRecordsByPlayerNameAndStatus("네말이다맞아", "CONFIRMED");
     }
 
     @Test

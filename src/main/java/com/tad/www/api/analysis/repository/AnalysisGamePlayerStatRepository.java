@@ -20,11 +20,11 @@ public interface AnalysisGamePlayerStatRepository extends JpaRepository<Analysis
         JOIN FETCH s.game g
         LEFT JOIN FETCH s.player p
         WHERE g.status = :status
-          AND LOWER(COALESCE(p.playerName, s.playerNameSnapshot)) = LOWER(:playerName)
+          AND LOWER(REPLACE(COALESCE(p.playerName, s.playerNameSnapshot), ' ', '')) = LOWER(:normalizedPlayerName)
         ORDER BY COALESCE(g.confirmedAt, g.createdAt) DESC, g.id DESC
         """)
     List<AnalysisGamePlayerStat> findRecordsByPlayerNameAndStatus(
-        @Param("playerName") String playerName,
+        @Param("normalizedPlayerName") String normalizedPlayerName,
         @Param("status") String status
     );
 
@@ -49,6 +49,7 @@ public interface AnalysisGamePlayerStatRepository extends JpaRepository<Analysis
                 :keyword IS NULL
                 OR :keyword = ''
                 OR COALESCE(p.player_name, s.player_name_snapshot) ILIKE CONCAT('%', :keyword, '%')
+                OR REPLACE(LOWER(COALESCE(p.player_name, s.player_name_snapshot)), ' ', '') LIKE CONCAT('%', :normalizedKeyword, '%')
           )
         GROUP BY COALESCE(p.player_name, s.player_name_snapshot)
         HAVING COUNT(*) >= :minGames
@@ -57,6 +58,7 @@ public interface AnalysisGamePlayerStatRepository extends JpaRepository<Analysis
         """, nativeQuery = true)
     List<AnalysisPlayerRankingProjection> findPlayerRankings(
         @Param("keyword") String keyword,
+        @Param("normalizedKeyword") String normalizedKeyword,
         @Param("minGames") long minGames,
         @Param("limit") int limit
     );
