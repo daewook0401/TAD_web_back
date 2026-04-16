@@ -37,7 +37,13 @@ public interface AnalysisGamePlayerStatRepository extends JpaRepository<Analysis
                 OR COALESCE(p.player_name, s.player_name_snapshot) ILIKE CONCAT('%', :keyword, '%')
           )
         GROUP BY COALESCE(p.player_name, s.player_name_snapshot)
+        HAVING COUNT(*) >= :minGames
         ORDER BY wins DESC, winRate DESC, totalGames DESC, playerName ASC
+        LIMIT :limit
         """, nativeQuery = true)
-    List<AnalysisPlayerRankingProjection> findPlayerRankings(@Param("keyword") String keyword);
+    List<AnalysisPlayerRankingProjection> findPlayerRankings(
+        @Param("keyword") String keyword,
+        @Param("minGames") long minGames,
+        @Param("limit") int limit
+    );
 }

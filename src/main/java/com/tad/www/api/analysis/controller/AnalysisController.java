@@ -49,9 +49,11 @@ public class AnalysisController {
 
     @GetMapping("/rankings")
     public ResponseEntity<List<AnalysisPlayerRankingResponse>> getPlayerRankings(
-        @RequestParam(value = "keyword", required = false) String keyword
+        @RequestParam(value = "keyword", required = false) String keyword,
+        @RequestParam(value = "minGames", required = false) Long minGames,
+        @RequestParam(value = "limit", required = false) Integer limit
     ) {
-        return ResponseEntity.ok(analysisService.getPlayerRankings(keyword));
+        return ResponseEntity.ok(analysisService.getPlayerRankings(keyword, minGames, limit));
     }
 
     @GetMapping("/{gameId}")

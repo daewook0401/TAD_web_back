@@ -38,6 +38,9 @@ public class AnalysisService {
     private static final String STATUS_DRAFT = "DRAFT";
     private static final String STATUS_CONFIRMED = "CONFIRMED";
     private static final String STATUS_PROCESSING = "PROCESSING";
+    private static final long DEFAULT_MIN_GAMES = 1L;
+    private static final int DEFAULT_RANKING_LIMIT = 100;
+    private static final int MAX_RANKING_LIMIT = 300;
 
     private final MinioStorageService minioStorageService;
     private final AnalysisPlayerRepository analysisPlayerRepository;
@@ -82,10 +85,18 @@ public class AnalysisService {
     }
 
     @Transactional(readOnly = true)
-    public List<AnalysisPlayerRankingResponse> getPlayerRankings(String keyword) {
+    public List<AnalysisPlayerRankingResponse> getPlayerRankings(String keyword, Long minGames, Integer limit) {
         String normalizedKeyword = normalizeNullableText(keyword);
+        long normalizedMinGames = minGames == null || minGames < 1 ? DEFAULT_MIN_GAMES : minGames;
+        int normalizedLimit = limit == null || limit < 1
+            ? DEFAULT_RANKING_LIMIT
+            : Math.min(limit, MAX_RANKING_LIMIT);
 
-        List<AnalysisPlayerRankingResponse> rankings = analysisGamePlayerStatRepository.findPlayerRankings(normalizedKeyword)
+        List<AnalysisPlayerRankingResponse> rankings = analysisGamePlayerStatRepository.findPlayerRankings(
+                normalizedKeyword,
+                normalizedMinGames,
+                normalizedLimit
+            )
             .stream()
             .map(projection -> AnalysisPlayerRankingResponse.builder()
                 .playerName(projection.getPlayerName())
@@ -125,7 +136,7 @@ public class AnalysisService {
 
         String normalizedWinner = normalizeWinner(request.getWinner());
         if (!"team1".equals(normalizedWinner) && !"team2".equals(normalizedWinner)) {
-            throw new IllegalArgumentException("winner 값은 team1 또는 team2 이어야 합니다.");
+            throw new IllegalArgumentException("winner 값은 team1 또는 team2여야 합니다.");
         }
 
         game.setWinner(normalizedWinner);

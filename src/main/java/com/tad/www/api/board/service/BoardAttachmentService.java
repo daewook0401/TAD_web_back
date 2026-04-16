@@ -75,7 +75,7 @@ public class BoardAttachmentService {
 
             StoredFile storedFile = uploadFile(file, "comments", comment.getId());
             if (!FILE_KIND_IMAGE.equals(storedFile.fileKind())) {
-                throw new IllegalArgumentException("댓글 첨부에는 이미지 파일만 업로드할 수 있습니다.");
+                throw new IllegalArgumentException("댓글 첨부는 이미지 파일만 업로드할 수 있습니다.");
             }
 
             BoardCommentAttachment saved = boardCommentAttachmentRepository.save(BoardCommentAttachment.builder()

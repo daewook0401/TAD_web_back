@@ -77,7 +77,7 @@ public class BoardCommentService {
         boolean hasImages = images != null && images.stream().anyMatch(file -> file != null && !file.isEmpty());
 
         if (normalizedContent == null && !hasImages) {
-            throw new IllegalArgumentException("댓글 내용 또는 이미지는 하나 이상 필요합니다.");
+            throw new IllegalArgumentException("댓글 내용 또는 이미지가 하나 이상 필요합니다.");
         }
 
         BoardComment saved = boardCommentRepository.save(BoardComment.builder()
@@ -158,7 +158,7 @@ public class BoardCommentService {
             .anyMatch("ROLE_ADMIN"::equals);
 
         if (!isAdmin) {
-            throw new AccessDeniedException("댓글을 수정 또는 삭제할 권한이 없습니다.");
+            throw new AccessDeniedException("댓글을 수정하거나 삭제할 권한이 없습니다.");
         }
     }
 
