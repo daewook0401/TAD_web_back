@@ -17,4 +17,6 @@ public interface AnalysisGameRepository extends JpaRepository<AnalysisGame, Long
 
     @EntityGraph(attributePaths = {"uploader"})
     Optional<AnalysisGame> findByIdAndUploaderId(Long id, Long uploaderId);
+
+    Optional<AnalysisGame> findByIdAndStatus(Long id, String status);
 }

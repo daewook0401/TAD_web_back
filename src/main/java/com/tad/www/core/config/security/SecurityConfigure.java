@@ -74,6 +74,8 @@ public class SecurityConfigure {
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/board/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/analyze/rankings").permitAll()
+                .requestMatchers(HttpMethod.GET, "/analyze/player-records").permitAll()
+                .requestMatchers(HttpMethod.GET, "/analyze/records/**").permitAll()
                 .requestMatchers(
                     "/auth/login",
                     "/auth/signup",

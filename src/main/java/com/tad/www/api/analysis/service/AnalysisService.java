@@ -17,6 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.tad.www.api.analysis.dto.AnalysisDraftPlayerUpdateRequest;
 import com.tad.www.api.analysis.dto.AnalysisDraftTeamUpdateRequest;
 import com.tad.www.api.analysis.dto.AnalysisDraftUpdateRequest;
+import com.tad.www.api.analysis.dto.AnalysisPlayerRecordResponse;
 import com.tad.www.api.analysis.dto.AnalysisPlayerRankingResponse;
 import com.tad.www.api.analysis.dto.AnalysisRecordSummaryResponse;
 import com.tad.www.api.analysis.dto.AnalyzeUploadResponse;
@@ -85,6 +86,14 @@ public class AnalysisService {
     }
 
     @Transactional(readOnly = true)
+    public AnalyzeUploadResponse getConfirmedRecordDetail(Long gameId) {
+        AnalysisGame game = analysisGameRepository.findByIdAndStatus(gameId, STATUS_CONFIRMED)
+            .orElseThrow(() -> new IllegalArgumentException("확정된 경기 기록을 찾을 수 없습니다."));
+
+        return buildDetailResponse(game);
+    }
+
+    @Transactional(readOnly = true)
     public List<AnalysisPlayerRankingResponse> getPlayerRankings(String keyword, Long minGames, Integer limit) {
         String normalizedKeyword = normalizeNullableText(keyword);
         long normalizedMinGames = minGames == null || minGames < 1 ? DEFAULT_MIN_GAMES : minGames;
@@ -126,6 +135,19 @@ public class AnalysisService {
                 .averageCs(rankings.get(index).getAverageCs())
                 .averageGold(rankings.get(index).getAverageGold())
                 .build())
+            .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<AnalysisPlayerRecordResponse> getPlayerRecords(String playerName) {
+        String normalizedPlayerName = normalizeNullableText(playerName);
+        if (normalizedPlayerName == null) {
+            throw new IllegalArgumentException("playerName은 필수입니다.");
+        }
+
+        return analysisGamePlayerStatRepository.findRecordsByPlayerNameAndStatus(normalizedPlayerName, STATUS_CONFIRMED)
+            .stream()
+            .map(AnalysisPlayerRecordResponse::from)
             .toList();
     }
 

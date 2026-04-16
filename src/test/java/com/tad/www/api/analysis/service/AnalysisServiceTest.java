@@ -1,11 +1,13 @@
 package com.tad.www.api.analysis.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -15,6 +17,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.tad.www.api.analysis.dto.AnalysisPlayerRankingResponse;
+import com.tad.www.api.analysis.dto.AnalysisPlayerRecordResponse;
+import com.tad.www.api.analysis.dto.AnalyzeUploadResponse;
+import com.tad.www.api.analysis.entity.AnalysisGame;
+import com.tad.www.api.analysis.entity.AnalysisGamePlayerStat;
+import com.tad.www.api.analysis.entity.AnalysisPlayer;
 import com.tad.www.api.analysis.repository.AnalysisGamePlayerStatRepository;
 import com.tad.www.api.analysis.repository.AnalysisGameRepository;
 import com.tad.www.api.analysis.repository.AnalysisPlayerRankingProjection;
@@ -68,6 +75,94 @@ class AnalysisServiceTest {
 
         assertThat(rankings).singleElement().extracting(AnalysisPlayerRankingResponse::getPlayerName).isEqualTo("Keria");
         verify(analysisGamePlayerStatRepository).findPlayerRankings("ker", 1L, 300);
+    }
+
+    @Test
+    void getPlayerRecordsReturnsConfirmedGameRows() {
+        AnalysisGame game = AnalysisGame.builder()
+            .id(15L)
+            .status("CONFIRMED")
+            .screenshotUrl("https://example.com/game.png")
+            .createdAt(LocalDateTime.of(2026, 4, 16, 10, 0))
+            .confirmedAt(LocalDateTime.of(2026, 4, 16, 10, 5))
+            .build();
+        AnalysisPlayer player = AnalysisPlayer.builder()
+            .id(7L)
+            .playerName("Faker")
+            .build();
+        AnalysisGamePlayerStat stat = AnalysisGamePlayerStat.builder()
+            .id(100L)
+            .game(game)
+            .player(player)
+            .teamKey("team1")
+            .slotNumber(2)
+            .kills(8)
+            .deaths(1)
+            .assists(11)
+            .cs(240)
+            .gold(15300)
+            .isWinner(true)
+            .build();
+
+        when(analysisGamePlayerStatRepository.findRecordsByPlayerNameAndStatus("Faker", "CONFIRMED"))
+            .thenReturn(List.of(stat));
+
+        List<AnalysisPlayerRecordResponse> records = analysisService.getPlayerRecords(" Faker ");
+
+        assertThat(records).singleElement()
+            .satisfies(record -> {
+                assertThat(record.getGameNumber()).isEqualTo(15L);
+                assertThat(record.getPlayerName()).isEqualTo("Faker");
+                assertThat(record.getResult()).isEqualTo("WIN");
+                assertThat(record.getKills()).isEqualTo(8);
+            });
+    }
+
+    @Test
+    void getPlayerRecordsRequiresPlayerName() {
+        assertThatThrownBy(() -> analysisService.getPlayerRecords(" "))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("playerName은 필수입니다.");
+    }
+
+    @Test
+    void getConfirmedRecordDetailReturnsFullGameDetail() {
+        AnalysisGame game = AnalysisGame.builder()
+            .id(21L)
+            .status("CONFIRMED")
+            .winner("team1")
+            .bucket("tad")
+            .objectKey("analysis/games/game.png")
+            .screenshotUrl("https://example.com/game.png")
+            .createdAt(LocalDateTime.of(2026, 4, 16, 11, 0))
+            .confirmedAt(LocalDateTime.of(2026, 4, 16, 11, 5))
+            .build();
+        AnalysisGamePlayerStat stat = AnalysisGamePlayerStat.builder()
+            .id(200L)
+            .game(game)
+            .playerNameSnapshot("Faker")
+            .teamKey("team1")
+            .slotNumber(1)
+            .kills(10)
+            .deaths(2)
+            .assists(7)
+            .cs(250)
+            .gold(16000)
+            .isWinner(true)
+            .build();
+
+        when(analysisGameRepository.findByIdAndStatus(21L, "CONFIRMED")).thenReturn(java.util.Optional.of(game));
+        when(analysisGamePlayerStatRepository.findByGameIdOrderByTeamKeyAscSlotNumberAsc(21L)).thenReturn(List.of(stat));
+
+        AnalyzeUploadResponse response = analysisService.getConfirmedRecordDetail(21L);
+
+        assertThat(response.getGameNumber()).isEqualTo(21L);
+        assertThat(response.getTeam1().players()).singleElement()
+            .satisfies(player -> {
+                assertThat(player.getName()).isEqualTo("Faker");
+                assertThat(player.getKills()).isEqualTo(10);
+                assertThat(player.getWinner()).isTrue();
+            });
     }
 
     private AnalysisPlayerRankingProjection projection(
