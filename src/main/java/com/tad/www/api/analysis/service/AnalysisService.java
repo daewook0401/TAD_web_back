@@ -17,6 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.tad.www.api.analysis.dto.AnalysisDraftPlayerUpdateRequest;
 import com.tad.www.api.analysis.dto.AnalysisDraftTeamUpdateRequest;
 import com.tad.www.api.analysis.dto.AnalysisDraftUpdateRequest;
+import com.tad.www.api.analysis.dto.AnalysisPlayerRecordResponse;
 import com.tad.www.api.analysis.dto.AnalysisPlayerRankingResponse;
 import com.tad.www.api.analysis.dto.AnalysisRecordSummaryResponse;
 import com.tad.www.api.analysis.dto.AnalyzeUploadResponse;
@@ -126,6 +127,19 @@ public class AnalysisService {
                 .averageCs(rankings.get(index).getAverageCs())
                 .averageGold(rankings.get(index).getAverageGold())
                 .build())
+            .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<AnalysisPlayerRecordResponse> getPlayerRecords(String playerName) {
+        String normalizedPlayerName = normalizeNullableText(playerName);
+        if (normalizedPlayerName == null) {
+            throw new IllegalArgumentException("playerName은 필수입니다.");
+        }
+
+        return analysisGamePlayerStatRepository.findConfirmedRecordsByPlayerName(normalizedPlayerName)
+            .stream()
+            .map(AnalysisPlayerRecordResponse::from)
             .toList();
     }
 

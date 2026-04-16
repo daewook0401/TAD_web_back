@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.tad.www.api.analysis.dto.AnalysisDraftUpdateRequest;
+import com.tad.www.api.analysis.dto.AnalysisPlayerRecordResponse;
 import com.tad.www.api.analysis.dto.AnalysisPlayerRankingResponse;
 import com.tad.www.api.analysis.dto.AnalysisRecordSummaryResponse;
 import com.tad.www.api.analysis.dto.AnalyzeUploadResponse;
@@ -54,6 +55,13 @@ public class AnalysisController {
         @RequestParam(value = "limit", required = false) Integer limit
     ) {
         return ResponseEntity.ok(analysisService.getPlayerRankings(keyword, minGames, limit));
+    }
+
+    @GetMapping("/player-records")
+    public ResponseEntity<List<AnalysisPlayerRecordResponse>> getPlayerRecords(
+        @RequestParam(value = "playerName") String playerName
+    ) {
+        return ResponseEntity.ok(analysisService.getPlayerRecords(playerName));
     }
 
     @GetMapping("/{gameId}")

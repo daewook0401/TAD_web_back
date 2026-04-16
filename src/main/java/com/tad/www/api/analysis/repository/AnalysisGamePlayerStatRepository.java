@@ -14,6 +14,17 @@ public interface AnalysisGamePlayerStatRepository extends JpaRepository<Analysis
 
     List<AnalysisGamePlayerStat> findByGameIdOrderByTeamKeyAscSlotNumberAsc(Long gameId);
 
+    @Query("""
+        SELECT s
+        FROM AnalysisGamePlayerStat s
+        JOIN FETCH s.game g
+        LEFT JOIN FETCH s.player p
+        WHERE g.status = 'CONFIRMED'
+          AND LOWER(COALESCE(p.playerName, s.playerNameSnapshot)) = LOWER(:playerName)
+        ORDER BY COALESCE(g.confirmedAt, g.createdAt) DESC, g.id DESC
+        """)
+    List<AnalysisGamePlayerStat> findConfirmedRecordsByPlayerName(@Param("playerName") String playerName);
+
     @Query(value = """
         SELECT
             COALESCE(p.player_name, s.player_name_snapshot) AS playerName,
