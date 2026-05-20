@@ -15,6 +15,11 @@ public interface AnalysisGameRepository extends JpaRepository<AnalysisGame, Long
     @EntityGraph(attributePaths = {"uploader"})
     List<AnalysisGame> findByUploaderIdOrderByCreatedAtDesc(Long uploaderId);
 
+    long countByUploaderId(Long uploaderId);
+
+    @EntityGraph(attributePaths = {"uploader"})
+    List<AnalysisGame> findTop5ByUploaderIdOrderByCreatedAtDesc(Long uploaderId);
+
     @EntityGraph(attributePaths = {"uploader"})
     Optional<AnalysisGame> findByIdAndUploaderId(Long id, Long uploaderId);
 

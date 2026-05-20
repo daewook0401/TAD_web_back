@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import com.tad.www.api.board.entity.BoardPost;
+import com.tad.www.core.util.TextUtils;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -53,6 +54,6 @@ public class BoardPostDetailResponse {
     }
 
     private static String normalizePostType(String postType) {
-        return postType == null ? null : postType.trim().toLowerCase();
+        return TextUtils.normalizeNullableLowerCase(postType);
     }
 }

@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import com.tad.www.api.auth.dto.response.MailVerificationResponse;
 import com.tad.www.api.user.repository.UserRepository;
+import com.tad.www.core.util.TextUtils;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -101,6 +102,6 @@ public class MailService {
     }
 
     private String normalizeEmail(String email) {
-        return email == null ? null : email.trim().toLowerCase();
+        return TextUtils.normalizeNullableLowerCase(email);
     }
 }

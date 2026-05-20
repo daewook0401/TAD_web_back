@@ -29,6 +29,7 @@ import com.tad.www.api.analysis.repository.AnalysisGameRepository;
 import com.tad.www.api.analysis.repository.AnalysisPlayerRepository;
 import com.tad.www.api.user.entity.User;
 import com.tad.www.core.config.minio.MinioStorageService;
+import com.tad.www.core.util.TextUtils;
 
 import lombok.RequiredArgsConstructor;
 
@@ -95,60 +96,49 @@ public class AnalysisService {
 
     @Transactional(readOnly = true)
     public List<AnalysisPlayerRankingResponse> getPlayerRankings(String keyword, Long minGames, Integer limit) {
-        String normalizedKeyword = normalizeNullableText(keyword);
-        String compactKeyword = compactSearchText(normalizedKeyword);
+        String normalizedKeyword = TextUtils.normalizeNullable(keyword);
+        String compactKeyword = TextUtils.compactLowerCase(normalizedKeyword);
         long normalizedMinGames = minGames == null || minGames < 1 ? DEFAULT_MIN_GAMES : minGames;
         int normalizedLimit = limit == null || limit < 1
             ? DEFAULT_RANKING_LIMIT
             : Math.min(limit, MAX_RANKING_LIMIT);
 
-        List<AnalysisPlayerRankingResponse> rankings = analysisGamePlayerStatRepository.findPlayerRankings(
+        var rankings = analysisGamePlayerStatRepository.findPlayerRankings(
                 normalizedKeyword,
                 compactKeyword,
                 normalizedMinGames,
                 normalizedLimit
-            )
-            .stream()
-            .map(projection -> AnalysisPlayerRankingResponse.builder()
-                .playerName(projection.getPlayerName())
-                .wins(projection.getWins())
-                .losses(projection.getLosses())
-                .totalGames(projection.getTotalGames())
-                .winRate(projection.getWinRate())
-                .averageKills(projection.getAverageKills())
-                .averageDeaths(projection.getAverageDeaths())
-                .averageAssists(projection.getAverageAssists())
-                .averageCs(projection.getAverageCs())
-                .averageGold(projection.getAverageGold())
-                .build())
-            .toList();
+            );
 
         return IntStream.range(0, rankings.size())
-            .mapToObj(index -> AnalysisPlayerRankingResponse.builder()
-                .rank(index + 1)
-                .playerName(rankings.get(index).getPlayerName())
-                .wins(rankings.get(index).getWins())
-                .losses(rankings.get(index).getLosses())
-                .totalGames(rankings.get(index).getTotalGames())
-                .winRate(rankings.get(index).getWinRate())
-                .averageKills(rankings.get(index).getAverageKills())
-                .averageDeaths(rankings.get(index).getAverageDeaths())
-                .averageAssists(rankings.get(index).getAverageAssists())
-                .averageCs(rankings.get(index).getAverageCs())
-                .averageGold(rankings.get(index).getAverageGold())
-                .build())
+            .mapToObj(index -> {
+                var projection = rankings.get(index);
+                return AnalysisPlayerRankingResponse.builder()
+                    .rank(index + 1)
+                    .playerName(projection.getPlayerName())
+                    .wins(projection.getWins())
+                    .losses(projection.getLosses())
+                    .totalGames(projection.getTotalGames())
+                    .winRate(projection.getWinRate())
+                    .averageKills(projection.getAverageKills())
+                    .averageDeaths(projection.getAverageDeaths())
+                    .averageAssists(projection.getAverageAssists())
+                    .averageCs(projection.getAverageCs())
+                    .averageGold(projection.getAverageGold())
+                    .build();
+            })
             .toList();
     }
 
     @Transactional(readOnly = true)
     public List<AnalysisPlayerRecordResponse> getPlayerRecords(String playerName) {
-        String normalizedPlayerName = normalizeNullableText(playerName);
+        String normalizedPlayerName = TextUtils.normalizeNullable(playerName);
         if (normalizedPlayerName == null) {
             throw new IllegalArgumentException("playerName은 필수입니다.");
         }
 
         return analysisGamePlayerStatRepository.findRecordsByPlayerNameAndStatus(
-                compactSearchText(normalizedPlayerName),
+                TextUtils.compactLowerCase(normalizedPlayerName),
                 STATUS_CONFIRMED
             )
             .stream()
@@ -161,7 +151,7 @@ public class AnalysisService {
         AnalysisGame game = getOwnedGame(gameId, currentUser);
         ensureDraft(game);
 
-        String normalizedWinner = normalizeWinner(request.getWinner());
+        String normalizedWinner = TextUtils.normalizeNullable(request.getWinner());
         if (!"team1".equals(normalizedWinner) && !"team2".equals(normalizedWinner)) {
             throw new IllegalArgumentException("winner 값은 team1 또는 team2여야 합니다.");
         }
@@ -185,7 +175,7 @@ public class AnalysisService {
 
         List<AnalysisGamePlayerStat> stats = analysisGamePlayerStatRepository.findByGameIdOrderByTeamKeyAscSlotNumberAsc(gameId);
         for (AnalysisGamePlayerStat stat : stats) {
-            String normalizedName = normalizeNullableText(stat.getPlayerNameSnapshot());
+            String normalizedName = TextUtils.normalizeNullable(stat.getPlayerNameSnapshot());
             stat.setPlayerNameSnapshot(normalizedName);
             stat.setIsWinner(game.getWinner().equals(stat.getTeamKey()));
 
@@ -226,7 +216,7 @@ public class AnalysisService {
             }
 
             stat.setPlayer(null);
-            stat.setPlayerNameSnapshot(normalizeNullableText(playerRequest.getName()));
+            stat.setPlayerNameSnapshot(TextUtils.normalizeNullable(playerRequest.getName()));
             stat.setKills(playerRequest.getKills());
             stat.setDeaths(playerRequest.getDeaths());
             stat.setAssists(playerRequest.getAssists());
@@ -299,25 +289,4 @@ public class AnalysisService {
         }
     }
 
-    private String normalizeWinner(String winner) {
-        return normalizeNullableText(winner);
-    }
-
-    private String normalizeNullableText(String value) {
-        if (value == null) {
-            return null;
-        }
-
-        String trimmed = value.trim();
-        return trimmed.isEmpty() ? null : trimmed;
-    }
-
-    private String compactSearchText(String value) {
-        if (value == null) {
-            return null;
-        }
-
-        String compacted = value.replaceAll("\\s+", "").toLowerCase();
-        return compacted.isEmpty() ? null : compacted;
-    }
 }

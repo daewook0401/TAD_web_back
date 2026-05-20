@@ -20,14 +20,13 @@ import com.tad.www.api.auth.dto.response.AuthResponse;
 import com.tad.www.api.auth.dto.response.AuthUserResponse;
 import com.tad.www.api.auth.dto.response.ProfileResponse;
 import com.tad.www.api.auth.dto.response.SuccessResponse;
-import com.tad.www.api.auth.entity.LoginHistory;
 import com.tad.www.api.auth.entity.UserRole;
-import com.tad.www.api.auth.repository.LoginHistoryRepository;
 import com.tad.www.api.auth.repository.RoleRepository;
 import com.tad.www.api.auth.repository.UserRoleRepository;
 import com.tad.www.api.user.entity.User;
 import com.tad.www.api.user.repository.UserRepository;
 import com.tad.www.core.config.security.jwt.JwtUtil;
+import com.tad.www.core.util.TextUtils;
 
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
@@ -42,7 +41,7 @@ public class AuthService {
     private final JwtUtil jwtUtil;
     private final RefreshTokenRedisService refreshTokenRedisService;
     private final EmailVerificationRedisService emailVerificationRedisService;
-    private final LoginHistoryRepository loginHistoryRepository;
+    private final LoginHistoryService loginHistoryService;
     private final RoleRepository roleRepository;
     private final UserRoleRepository userRoleRepository;
 
@@ -98,10 +97,12 @@ public class AuthService {
             .orElseThrow(() -> new IllegalArgumentException("이메일 또는 비밀번호가 올바르지 않습니다."));
 
         if (user.getPasswordHash() == null || !passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+            saveLoginHistory(user.getId(), "NORMAL", "FAILURE");
             throw new IllegalArgumentException("이메일 또는 비밀번호가 올바르지 않습니다.");
         }
 
         if (!"ACTIVE".equalsIgnoreCase(user.getStatus())) {
+            saveLoginHistory(user.getId(), "NORMAL", "BLOCKED");
             throw new IllegalArgumentException("비활성화된 계정입니다.");
         }
 
@@ -188,7 +189,7 @@ public class AuthService {
     }
 
     private String normalizeEmail(String email) {
-        return email == null ? null : email.trim().toLowerCase();
+        return TextUtils.normalizeNullableLowerCase(email);
     }
 
     private java.util.Optional<UUID> resolvePublicId(String authorization, String refreshToken) {
@@ -227,14 +228,13 @@ public class AuthService {
 
     private void saveLoginHistory(Long userId, String loginType, String loginResult) {
         HttpServletRequest request = currentRequest();
-
-        loginHistoryRepository.save(LoginHistory.builder()
-            .userId(userId)
-            .ipAddress(resolveClientIp(request))
-            .userAgent(resolveUserAgent(request))
-            .loginType(loginType)
-            .loginResult(loginResult)
-            .build());
+        loginHistoryService.record(
+            userId,
+            loginType,
+            loginResult,
+            resolveClientIp(request),
+            resolveUserAgent(request)
+        );
     }
 
     private HttpServletRequest currentRequest() {

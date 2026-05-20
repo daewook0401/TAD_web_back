@@ -1,5 +1,6 @@
 package com.tad.www.api.board.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -32,6 +33,27 @@ public interface BoardPostRepository extends JpaRepository<BoardPost, Long> {
 
     @EntityGraph(attributePaths = {"category", "author"})
     Optional<BoardPost> findByIdAndIsDeletedFalse(Long id);
+
+    @EntityGraph(attributePaths = {"category", "author"})
+    @Query("""
+        select p
+        from BoardPost p
+        where p.author.id = :authorId
+          and p.isDeleted = false
+        order by p.createdAt desc, p.id desc
+        """)
+    List<BoardPost> findRecentVisibleByAuthorId(
+        @Param("authorId") Long authorId,
+        Pageable pageable
+    );
+
+    @Query("""
+        select count(p)
+        from BoardPost p
+        where p.author.id = :authorId
+          and p.isDeleted = false
+        """)
+    long countVisibleByAuthorId(@Param("authorId") Long authorId);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""

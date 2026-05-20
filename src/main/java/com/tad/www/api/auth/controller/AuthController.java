@@ -22,6 +22,7 @@ import com.tad.www.api.auth.dto.request.SignupRequest;
 import com.tad.www.api.auth.dto.request.UpdateProfileRequest;
 import com.tad.www.api.auth.dto.response.AuthResponse;
 import com.tad.www.api.auth.dto.response.MailVerificationResponse;
+import com.tad.www.api.auth.dto.response.MyPageSummaryResponse;
 import com.tad.www.api.auth.dto.response.ProfileResponse;
 import com.tad.www.api.auth.dto.response.SuccessResponse;
 import com.tad.www.api.auth.dto.token.TokenRefreshRequest;
@@ -29,6 +30,7 @@ import com.tad.www.api.auth.dto.token.TokenResponse;
 import com.tad.www.api.auth.service.AuthService;
 import com.tad.www.api.auth.service.JwtRefreshService;
 import com.tad.www.api.auth.service.MailService;
+import com.tad.www.api.auth.service.MyPageService;
 import com.tad.www.api.user.entity.User;
 
 import jakarta.validation.Valid;
@@ -44,6 +46,7 @@ public class AuthController {
     private final MailService mailService;
     private final JwtRefreshService jwtRefreshService;
     private final AuthService authService;
+    private final MyPageService myPageService;
 
     @PostMapping("/mail")
     public ResponseEntity<MailVerificationResponse> sendMail(@Valid @RequestBody MailSendRequest request) {
@@ -77,6 +80,11 @@ public class AuthController {
     @GetMapping("/me")
     public ResponseEntity<ProfileResponse> getMyProfile(@AuthenticationPrincipal User currentUser) {
         return ResponseEntity.ok(authService.getMyProfile(currentUser));
+    }
+
+    @GetMapping("/me/summary")
+    public ResponseEntity<MyPageSummaryResponse> getMyPageSummary(@AuthenticationPrincipal User currentUser) {
+        return ResponseEntity.ok(myPageService.getSummary(currentUser));
     }
 
     @PutMapping("/me")

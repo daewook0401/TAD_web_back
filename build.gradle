@@ -30,7 +30,7 @@ ext {
 	// Version Management
 	jjwtVersion = '0.12.3'
 	lombokVersion = '1.18.30'
-	postgresqlVersion = '42.6.0'
+	postgresqlVersion = '42.7.8'
 	validationVersion = '2.0.1'
 	junitVersion = '5.10.0'
 	mockitoVersion = '5.7.0'
@@ -70,7 +70,22 @@ tasks.named('test') {
 
 // === Build Properties ===
 bootRun {
-	systemProperties = System.properties
+	[
+		'spring.profiles.active',
+		'spring.datasource.url',
+		'spring.datasource.username',
+		'spring.datasource.password',
+		'spring.data.redis.host',
+		'spring.data.redis.port',
+		'spring.data.redis.password',
+		'analysis.service-url',
+		'lofi.store-type'
+	].each { propertyName ->
+		def propertyValue = System.getProperty(propertyName)
+		if (propertyValue != null) {
+			systemProperty propertyName, propertyValue
+		}
+	}
 }
 
 tasks.withType(JavaCompile) {
