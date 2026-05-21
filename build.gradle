@@ -28,7 +28,6 @@ repositories {
 
 ext {
 	// Version Management
-	jjwtVersion = '0.12.3'
 	lombokVersion = '1.18.30'
 	postgresqlVersion = '42.6.0'
 	validationVersion = '2.0.1'
@@ -40,16 +39,10 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'io.minio:minio:8.5.12'
 
 	implementation "org.postgresql:postgresql:${postgresqlVersion}"
-
-	implementation "io.jsonwebtoken:jjwt-api:${jjwtVersion}"
-	
-	runtimeOnly "io.jsonwebtoken:jjwt-impl:${jjwtVersion}"
-	runtimeOnly "io.jsonwebtoken:jjwt-jackson:${jjwtVersion}"
 
 	implementation "io.github.closeup1202:lofi-spring-boot-starter:0.3.2"
   implementation 'org.springframework.boot:spring-boot-starter-actuator'

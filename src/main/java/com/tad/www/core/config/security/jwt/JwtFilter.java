@@ -3,7 +3,6 @@ package com.tad.www.core.config.security.jwt;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -14,10 +13,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tad.www.api.auth.service.RefreshTokenRedisService;
-import com.tad.www.api.user.repository.UserRepository;
-
-import io.jsonwebtoken.Claims;
+import com.tad.www.api.user.entity.User;
+import com.tad.www.core.config.gateway.AuthGatewayClient;
+import com.tad.www.core.config.gateway.AuthGatewayUnavailableException;
+import com.tad.www.core.config.gateway.TokenIntrospectionResponse;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -30,9 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class JwtFilter extends OncePerRequestFilter {
 
-    private final JwtUtil jwtUtil;
-    private final UserRepository userRepository;
-    private final RefreshTokenRedisService refreshTokenRedisService;
+    private final AuthGatewayClient authGatewayClient;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -48,31 +45,24 @@ public class JwtFilter extends OncePerRequestFilter {
         String authorization = request.getHeader(HttpHeaders.AUTHORIZATION);
 
         if (authorization != null && authorization.startsWith("Bearer ")) {
-            String token = authorization.substring(7);
-
             try {
-                Claims claims = jwtUtil.parseJwt(token);
-                if (!"access".equals(claims.get("type", String.class))) {
-                    throw new IllegalArgumentException("INVALID");
+                TokenIntrospectionResponse introspection = authGatewayClient.introspect(authorization);
+                if (!introspection.isActive()) {
+                    throw new IllegalArgumentException(introspection.getMessage());
                 }
 
-                UUID publicId = UUID.fromString(claims.getSubject());
-                Long userId = refreshTokenRedisService.getUserId(publicId);
-                if (userId == null) {
-                    throw new IllegalArgumentException("INVALID");
-                }
+                User user = User.builder()
+                    .id(introspection.getUserId())
+                    .email(introspection.getEmail())
+                    .nickname(introspection.getNickname())
+                    .pictureUrl(introspection.getProfileImageUrl())
+                    .status(introspection.getStatus())
+                    .build();
 
-                var user = userRepository.findById(userId).orElse(null);
-                if (user == null) {
-                    throw new IllegalArgumentException("INVALID");
-                }
-
-                List<?> roleClaims = claims.get("roles", List.class);
-                List<SimpleGrantedAuthority> authorities = roleClaims == null
+                List<String> roles = introspection.getRoles();
+                List<SimpleGrantedAuthority> authorities = roles == null
                     ? List.of()
-                    : roleClaims.stream()
-                        .filter(String.class::isInstance)
-                        .map(String.class::cast)
+                    : roles.stream()
                         .map(SimpleGrantedAuthority::new)
                         .toList();
 
@@ -84,6 +74,16 @@ public class JwtFilter extends OncePerRequestFilter {
                     );
 
                 SecurityContextHolder.getContext().setAuthentication(auth);
+            } catch (AuthGatewayUnavailableException e) {
+                SecurityContextHolder.clearContext();
+
+                if (isPublicPath(path, method)) {
+                    filterChain.doFilter(request, response);
+                    return;
+                }
+
+                writeErrorResponse(response, HttpServletResponse.SC_SERVICE_UNAVAILABLE, "AUTH_GATEWAY_UNAVAILABLE");
+                return;
             } catch (RuntimeException e) {
                 SecurityContextHolder.clearContext();
 
@@ -92,7 +92,7 @@ public class JwtFilter extends OncePerRequestFilter {
                     return;
                 }
 
-                writeUnauthorizedResponse(response, "EXPIRED".equals(e.getMessage())
+                writeErrorResponse(response, HttpServletResponse.SC_UNAUTHORIZED, "ACCESS_TOKEN_EXPIRED".equals(e.getMessage())
                     ? "ACCESS_TOKEN_EXPIRED"
                     : "INVALID_TOKEN");
                 return;
@@ -107,8 +107,8 @@ public class JwtFilter extends OncePerRequestFilter {
             || "/health".equals(path);
     }
 
-    private void writeUnauthorizedResponse(HttpServletResponse response, String message) throws IOException {
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+    private void writeErrorResponse(HttpServletResponse response, int status, String message) throws IOException {
+        response.setStatus(status);
         response.setCharacterEncoding("UTF-8");
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.getWriter().write(objectMapper.writeValueAsString(Map.of(
