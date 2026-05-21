@@ -3,6 +3,7 @@ package com.tad.www.api.auth.controller;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -37,6 +38,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @Slf4j
+@Profile("legacy-auth")
 @RequiredArgsConstructor
 @RequestMapping("/auth")
 public class AuthController {
