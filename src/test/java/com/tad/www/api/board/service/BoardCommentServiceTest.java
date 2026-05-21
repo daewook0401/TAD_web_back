@@ -2,6 +2,7 @@ package com.tad.www.api.board.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -16,7 +17,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
 
-import com.tad.www.api.auth.repository.UserRoleRepository;
 import com.tad.www.api.board.dto.BoardCommentCreateRequest;
 import com.tad.www.api.board.dto.BoardCommentResponse;
 import com.tad.www.api.board.dto.BoardCommentUpdateRequest;
@@ -37,7 +37,7 @@ class BoardCommentServiceTest {
     private BoardPostRepository boardPostRepository;
 
     @Mock
-    private UserRoleRepository userRoleRepository;
+    private BoardPermissionService boardPermissionService;
 
     @Mock
     private BoardAttachmentService boardAttachmentService;
@@ -85,13 +85,16 @@ class BoardCommentServiceTest {
     void updateCommentRejectsNonAuthorNonAdmin() {
         BoardPost post = boardPost(10L);
         BoardComment comment = comment(1L, post, user(1L), null, "text", false);
+        User currentUser = user(2L);
         BoardCommentUpdateRequest request = new BoardCommentUpdateRequest();
         request.setContent("new");
 
         when(boardCommentRepository.findById(1L)).thenReturn(Optional.of(comment));
-        when(userRoleRepository.findRoleNamesByUserId(2L)).thenReturn(List.of("ROLE_USER"));
+        doThrow(new AccessDeniedException("댓글을 수정하거나 삭제할 권한이 없습니다."))
+            .when(boardPermissionService)
+            .ensureCommentWritable(comment, currentUser);
 
-        assertThatThrownBy(() -> boardCommentService.updateComment(1L, user(2L), request))
+        assertThatThrownBy(() -> boardCommentService.updateComment(1L, currentUser, request))
             .isInstanceOf(AccessDeniedException.class)
             .hasMessage("댓글을 수정하거나 삭제할 권한이 없습니다.");
     }

@@ -29,7 +29,7 @@ repositories {
 ext {
 	// Version Management
 	lombokVersion = '1.18.30'
-	postgresqlVersion = '42.6.0'
+	postgresqlVersion = '42.7.8'
 	validationVersion = '2.0.1'
 	junitVersion = '5.10.0'
 	mockitoVersion = '5.7.0'
@@ -62,7 +62,19 @@ tasks.named('test') {
 
 // === Build Properties ===
 bootRun {
-	systemProperties = System.properties
+	[
+		'spring.profiles.active',
+		'spring.datasource.url',
+		'spring.datasource.username',
+		'spring.datasource.password',
+		'analysis.service-url',
+		'lofi.store-type'
+	].each { propertyName ->
+		def propertyValue = System.getProperty(propertyName)
+		if (propertyValue != null) {
+			systemProperty propertyName, propertyValue
+		}
+	}
 }
 
 tasks.withType(JavaCompile) {

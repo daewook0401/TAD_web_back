@@ -5,12 +5,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.tad.www.api.auth.repository.UserRoleRepository;
 import com.tad.www.api.board.dto.BoardCommentCreateRequest;
 import com.tad.www.api.board.dto.BoardCommentResponse;
 import com.tad.www.api.board.dto.BoardCommentUpdateRequest;
@@ -20,6 +18,7 @@ import com.tad.www.api.board.entity.BoardPost;
 import com.tad.www.api.board.repository.BoardCommentRepository;
 import com.tad.www.api.board.repository.BoardPostRepository;
 import com.tad.www.api.user.entity.User;
+import com.tad.www.core.util.TextUtils;
 
 import lombok.RequiredArgsConstructor;
 
@@ -29,7 +28,7 @@ public class BoardCommentService {
 
     private final BoardCommentRepository boardCommentRepository;
     private final BoardPostRepository boardPostRepository;
-    private final UserRoleRepository userRoleRepository;
+    private final BoardPermissionService boardPermissionService;
     private final BoardAttachmentService boardAttachmentService;
 
     @Transactional(readOnly = true)
@@ -104,7 +103,7 @@ public class BoardCommentService {
             throw new IllegalArgumentException("삭제된 댓글은 수정할 수 없습니다.");
         }
 
-        ensureWritableUser(comment, currentUser);
+        boardPermissionService.ensureCommentWritable(comment, currentUser);
         comment.setContent(request.getContent().trim());
         return BoardCommentResponse.from(
             comment,
@@ -117,7 +116,7 @@ public class BoardCommentService {
         BoardComment comment = boardCommentRepository.findById(commentId)
             .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다."));
 
-        ensureWritableUser(comment, currentUser);
+        boardPermissionService.ensureCommentWritable(comment, currentUser);
         if (!Boolean.TRUE.equals(comment.getIsDeleted())) {
             comment.setIsDeleted(true);
             boardPostRepository.decrementReplyCount(comment.getPost().getId());
@@ -148,25 +147,7 @@ public class BoardCommentService {
         return parent;
     }
 
-    private void ensureWritableUser(BoardComment comment, User currentUser) {
-        if (comment.getAuthor().getId().equals(currentUser.getId())) {
-            return;
-        }
-
-        boolean isAdmin = userRoleRepository.findRoleNamesByUserId(currentUser.getId())
-            .stream()
-            .anyMatch("ROLE_ADMIN"::equals);
-
-        if (!isAdmin) {
-            throw new AccessDeniedException("댓글을 수정하거나 삭제할 권한이 없습니다.");
-        }
-    }
-
     private String normalizeContent(String content) {
-        if (content == null) {
-            return null;
-        }
-        String trimmed = content.trim();
-        return trimmed.isEmpty() ? null : trimmed;
+        return TextUtils.normalizeNullable(content);
     }
 }

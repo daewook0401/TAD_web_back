@@ -29,6 +29,29 @@ Windows 환경에서는 아래 명령을 사용합니다.
 .\gradlew.bat bootRun
 ```
 
+로컬 DB/Redis와 로컬 yml의 MinIO endpoint에 붙여 실행할 때는 `local` 프로필을 사용합니다.
+분석 API가 떠 있지 않은 환경에서는 업로드/분석 호출을 제외한 기능부터 확인합니다.
+
+```powershell
+$env:SPRING_PROFILES_ACTIVE='local'
+$env:SPRING_DATASOURCE_URL='jdbc:postgresql://localhost:5432/tad'
+$env:SPRING_DATASOURCE_USERNAME='tad'
+$env:SPRING_DATASOURCE_PASSWORD='tad'
+$env:SPRING_DATA_REDIS_HOST='localhost'
+$env:SPRING_DATA_REDIS_PORT='6379'
+$env:MINIO_ENDPOINT='https://drive.towardadiamond.com'
+$env:MINIO_PUBLIC_URL='https://drive.towardadiamond.com'
+$env:MINIO_ACCESS_KEY='minioadmin'
+$env:MINIO_SECRET_KEY='minioadmin'
+$env:MINIO_BUCKET='tad'
+# 분석 API가 있을 때만 지정합니다.
+# $env:ANALYSIS_SERVICE_URL='http://localhost:8000'
+.\gradlew.bat bootRun
+```
+
+로컬 프로필 설정 파일은 `src/main/resources/application-local.yml`입니다.
+프론트 기본 API 주소가 `http://localhost:8080/api`이므로 로컬 프로필은 context-path를 `/api`로 맞춥니다.
+
 ## 테스트
 
 ```bash

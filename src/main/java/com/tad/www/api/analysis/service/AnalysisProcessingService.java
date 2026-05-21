@@ -17,6 +17,7 @@ import com.tad.www.api.analysis.entity.AnalysisGame;
 import com.tad.www.api.analysis.entity.AnalysisGamePlayerStat;
 import com.tad.www.api.analysis.repository.AnalysisGamePlayerStatRepository;
 import com.tad.www.api.analysis.repository.AnalysisGameRepository;
+import com.tad.www.core.util.TextUtils;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,7 +51,7 @@ public class AnalysisProcessingService {
 
         try {
             AnalysisServiceResponse response = requestAnalysis(bucket, objectKey);
-            String winner = normalizeNullableText(response.getWinner());
+            String winner = TextUtils.normalizeNullable(response.getWinner());
 
             if (!"team1".equals(winner) && !"team2".equals(winner)) {
                 throw new IllegalStateException("분석 서버 winner 값이 올바르지 않습니다.");
@@ -95,7 +96,7 @@ public class AnalysisProcessingService {
             analysisGamePlayerStatRepository.save(AnalysisGamePlayerStat.builder()
                 .game(game)
                 .player(null)
-                .playerNameSnapshot(normalizeNullableText(payload == null ? null : payload.getName()))
+                .playerNameSnapshot(TextUtils.normalizeNullable(payload == null ? null : payload.getName()))
                 .teamKey(teamKey)
                 .slotNumber(i + 1)
                 .kills(payload == null ? null : payload.getKills())
@@ -106,14 +107,5 @@ public class AnalysisProcessingService {
                 .isWinner(winner.equals(teamKey))
                 .build());
         }
-    }
-
-    private String normalizeNullableText(String value) {
-        if (value == null) {
-            return null;
-        }
-
-        String trimmed = value.trim();
-        return trimmed.isEmpty() ? null : trimmed;
     }
 }
