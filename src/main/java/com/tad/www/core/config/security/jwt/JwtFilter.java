@@ -45,11 +45,6 @@ public class JwtFilter extends OncePerRequestFilter {
         String path = request.getServletPath();
         String method = request.getMethod();
 
-        if (isRefreshPath(path)) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-
         String authorization = request.getHeader(HttpHeaders.AUTHORIZATION);
 
         if (authorization != null && authorization.startsWith("Bearer ")) {
@@ -107,13 +102,8 @@ public class JwtFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    private boolean isRefreshPath(String path) {
-        return "/auth/refresh".equals(path);
-    }
-
     private boolean isPublicPath(String path, String method) {
-        return path.startsWith("/auth/") || "/auth".equals(path)
-            || (("GET".equalsIgnoreCase(method)) && (path.startsWith("/board/") || "/board".equals(path)))
+        return (("GET".equalsIgnoreCase(method)) && (path.startsWith("/board/") || "/board".equals(path)))
             || "/health".equals(path);
     }
 

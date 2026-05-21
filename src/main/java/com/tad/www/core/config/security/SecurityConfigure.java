@@ -77,13 +77,6 @@ public class SecurityConfigure {
                 .requestMatchers(HttpMethod.GET, "/analyze/player-records").permitAll()
                 .requestMatchers(HttpMethod.GET, "/analyze/records/**").permitAll()
                 .requestMatchers(
-                    "/auth/login",
-                    "/auth/signup",
-                    "/auth/logout",
-                    "/auth/refresh",
-                    "/auth/mail",
-                    "/auth/mail/verify",
-                    "/auth/google-login",
                     "/health",
                     "/actuator/**"
                 ).permitAll()

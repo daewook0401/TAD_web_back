@@ -9,8 +9,6 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import com.tad.www.api.user.exception.UserNotFoundException;
-
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -37,14 +35,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(Map.of(
             "success", false,
             "message", message
-        ));
-    }
-
-    @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<Map<String, Object>> handleUserNotFound(UserNotFoundException e) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
-            "success", false,
-            "message", e.getMessage()
         ));
     }
 
