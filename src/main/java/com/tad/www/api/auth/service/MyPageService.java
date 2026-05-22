@@ -1,5 +1,8 @@
 package com.tad.www.api.auth.service;
 
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -24,6 +27,7 @@ import lombok.RequiredArgsConstructor;
 public class MyPageService {
 
     private static final int RECENT_LIMIT = 5;
+    private static final ZoneId SUMMARY_ZONE = ZoneId.of("Asia/Seoul");
 
     private final UserRepository userRepository;
     private final BoardPostRepository boardPostRepository;
@@ -41,7 +45,17 @@ public class MyPageService {
         long postCount = boardPostRepository.countVisibleByAuthorId(userId);
         long commentCount = boardCommentRepository.countVisibleByAuthorId(userId);
         long analysisCount = safeValue(() -> analysisGameRepository.countByUploaderId(userId), 0L);
-        long successfulLoginCount = loginHistoryRepository.countByUserIdAndLoginResult(userId, "SUCCESS");
+        OffsetDateTime todayStart = LocalDate.now(SUMMARY_ZONE)
+            .atStartOfDay(SUMMARY_ZONE)
+            .toOffsetDateTime();
+        OffsetDateTime tomorrowStart = todayStart.plusDays(1);
+        long successfulLoginCount = loginHistoryRepository
+            .countByUserIdAndLoginResultAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+                userId,
+                "SUCCESS",
+                todayStart,
+                tomorrowStart
+            );
         long failedLoginCount = loginHistoryRepository.countByUserIdAndLoginResult(userId, "FAILURE");
 
         return MyPageSummaryResponse.builder()

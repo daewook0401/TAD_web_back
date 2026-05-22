@@ -1,5 +1,6 @@
 package com.tad.www.api.auth.repository;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 
 import org.springframework.data.domain.Pageable;
@@ -12,6 +13,13 @@ import com.tad.www.api.auth.entity.LoginHistory;
 public interface LoginHistoryRepository extends JpaRepository<LoginHistory, Long> {
 
     long countByUserIdAndLoginResult(Long userId, String loginResult);
+
+    long countByUserIdAndLoginResultAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+        Long userId,
+        String loginResult,
+        OffsetDateTime startAt,
+        OffsetDateTime endAt
+    );
 
     List<LoginHistory> findByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
 

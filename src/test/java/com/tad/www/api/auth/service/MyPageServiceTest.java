@@ -63,7 +63,12 @@ class MyPageServiceTest {
         when(boardPostRepository.countVisibleByAuthorId(1L)).thenReturn(3L);
         when(boardCommentRepository.countVisibleByAuthorId(1L)).thenReturn(4L);
         when(analysisGameRepository.countByUploaderId(1L)).thenReturn(2L);
-        when(loginHistoryRepository.countByUserIdAndLoginResult(1L, "SUCCESS")).thenReturn(5L);
+        when(loginHistoryRepository.countByUserIdAndLoginResultAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+            org.mockito.ArgumentMatchers.eq(1L),
+            org.mockito.ArgumentMatchers.eq("SUCCESS"),
+            org.mockito.ArgumentMatchers.any(OffsetDateTime.class),
+            org.mockito.ArgumentMatchers.any(OffsetDateTime.class)
+        )).thenReturn(5L);
         when(loginHistoryRepository.countByUserIdAndLoginResult(1L, "FAILURE")).thenReturn(1L);
         when(boardPostRepository.findRecentVisibleByAuthorId(org.mockito.ArgumentMatchers.eq(1L), org.mockito.ArgumentMatchers.any(Pageable.class)))
             .thenReturn(List.of(post));
@@ -100,7 +105,12 @@ class MyPageServiceTest {
         when(boardPostRepository.countVisibleByAuthorId(1L)).thenReturn(0L);
         when(boardCommentRepository.countVisibleByAuthorId(1L)).thenReturn(0L);
         when(analysisGameRepository.countByUploaderId(1L)).thenThrow(new DataAccessResourceFailureException("missing analysis"));
-        when(loginHistoryRepository.countByUserIdAndLoginResult(1L, "SUCCESS")).thenReturn(0L);
+        when(loginHistoryRepository.countByUserIdAndLoginResultAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+            org.mockito.ArgumentMatchers.eq(1L),
+            org.mockito.ArgumentMatchers.eq("SUCCESS"),
+            org.mockito.ArgumentMatchers.any(OffsetDateTime.class),
+            org.mockito.ArgumentMatchers.any(OffsetDateTime.class)
+        )).thenReturn(0L);
         when(loginHistoryRepository.countByUserIdAndLoginResult(1L, "FAILURE")).thenReturn(0L);
         when(boardPostRepository.findRecentVisibleByAuthorId(org.mockito.ArgumentMatchers.eq(1L), org.mockito.ArgumentMatchers.any(Pageable.class)))
             .thenReturn(List.of());
