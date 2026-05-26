@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.tad.www.api.analysis.dto.AnalysisDraftUpdateRequest;
+import com.tad.www.api.analysis.dto.AnalysisAdminRecordResponse;
 import com.tad.www.api.analysis.dto.AnalysisPlayerRecordResponse;
 import com.tad.www.api.analysis.dto.AnalysisPlayerRankingResponse;
 import com.tad.www.api.analysis.dto.AnalysisRecordSummaryResponse;
@@ -46,6 +48,15 @@ public class AnalysisController {
     @GetMapping("/my-records")
     public ResponseEntity<List<AnalysisRecordSummaryResponse>> getMyRecords(@AuthenticationPrincipal User currentUser) {
         return ResponseEntity.ok(analysisService.getMyRecords(currentUser));
+    }
+
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @GetMapping("/admin/records")
+    public ResponseEntity<List<AnalysisAdminRecordResponse>> getAdminRecords(
+        @RequestParam(value = "status", required = false) String status,
+        @RequestParam(value = "limit", required = false) Integer limit
+    ) {
+        return ResponseEntity.ok(analysisService.getAdminRecords(status, limit));
     }
 
     @GetMapping("/rankings")
