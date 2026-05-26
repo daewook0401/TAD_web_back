@@ -4,10 +4,13 @@ import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.IntStream;
 
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -17,6 +20,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.tad.www.api.analysis.dto.AnalysisDraftPlayerUpdateRequest;
 import com.tad.www.api.analysis.dto.AnalysisDraftTeamUpdateRequest;
 import com.tad.www.api.analysis.dto.AnalysisDraftUpdateRequest;
+import com.tad.www.api.analysis.dto.AnalysisAdminRecordResponse;
 import com.tad.www.api.analysis.dto.AnalysisPlayerRecordResponse;
 import com.tad.www.api.analysis.dto.AnalysisPlayerRankingResponse;
 import com.tad.www.api.analysis.dto.AnalysisRecordSummaryResponse;
@@ -40,9 +44,12 @@ public class AnalysisService {
     private static final String STATUS_DRAFT = "DRAFT";
     private static final String STATUS_CONFIRMED = "CONFIRMED";
     private static final String STATUS_PROCESSING = "PROCESSING";
+    private static final String STATUS_FAILED = "FAILED";
     private static final long DEFAULT_MIN_GAMES = 1L;
     private static final int DEFAULT_RANKING_LIMIT = 100;
     private static final int MAX_RANKING_LIMIT = 300;
+    private static final int DEFAULT_ADMIN_RECORD_LIMIT = 100;
+    private static final int MAX_ADMIN_RECORD_LIMIT = 300;
 
     private final MinioStorageService minioStorageService;
     private final AnalysisPlayerRepository analysisPlayerRepository;
@@ -81,8 +88,29 @@ public class AnalysisService {
     }
 
     @Transactional(readOnly = true)
+    public List<AnalysisAdminRecordResponse> getAdminRecords(String status, Integer limit) {
+        String normalizedStatus = TextUtils.normalizeNullable(status);
+        normalizedStatus = normalizedStatus == null ? null : normalizedStatus.toUpperCase(Locale.ROOT);
+        int normalizedLimit = limit == null || limit < 1
+            ? DEFAULT_ADMIN_RECORD_LIMIT
+            : Math.min(limit, MAX_ADMIN_RECORD_LIMIT);
+
+        List<AnalysisGame> games = isRecordStatus(normalizedStatus)
+            ? analysisGameRepository.findByStatusOrderByCreatedAtDesc(normalizedStatus)
+            : analysisGameRepository.findAllByOrderByCreatedAtDesc();
+
+        return games.stream()
+            .limit(normalizedLimit)
+            .map(game -> AnalysisAdminRecordResponse.from(
+                game,
+                analysisGamePlayerStatRepository.findByGameIdOrderByTeamKeyAscSlotNumberAsc(game.getId())
+            ))
+            .toList();
+    }
+
+    @Transactional(readOnly = true)
     public AnalyzeUploadResponse getMyRecordDetail(Long gameId, User currentUser) {
-        AnalysisGame game = getOwnedGame(gameId, currentUser);
+        AnalysisGame game = getAccessibleGame(gameId, currentUser);
         return buildDetailResponse(game);
     }
 
@@ -148,7 +176,7 @@ public class AnalysisService {
 
     @Transactional
     public AnalyzeUploadResponse updateDraft(Long gameId, User currentUser, AnalysisDraftUpdateRequest request) {
-        AnalysisGame game = getOwnedGame(gameId, currentUser);
+        AnalysisGame game = getAccessibleGame(gameId, currentUser);
         ensureDraft(game);
 
         String normalizedWinner = TextUtils.normalizeNullable(request.getWinner());
@@ -170,7 +198,7 @@ public class AnalysisService {
 
     @Transactional
     public AnalyzeUploadResponse confirmDraft(Long gameId, User currentUser) {
-        AnalysisGame game = getOwnedGame(gameId, currentUser);
+        AnalysisGame game = getAccessibleGame(gameId, currentUser);
         ensureDraft(game);
 
         List<AnalysisGamePlayerStat> stats = analysisGamePlayerStatRepository.findByGameIdOrderByTeamKeyAscSlotNumberAsc(gameId);
@@ -267,9 +295,27 @@ public class AnalysisService {
             .toList();
     }
 
-    private AnalysisGame getOwnedGame(Long gameId, User currentUser) {
+    private AnalysisGame getAccessibleGame(Long gameId, User currentUser) {
+        if (hasAdminAuthority()) {
+            return analysisGameRepository.findById(gameId)
+                .orElseThrow(() -> new IllegalArgumentException("내전 기록을 찾을 수 없습니다."));
+        }
+
         return analysisGameRepository.findByIdAndUploaderId(gameId, currentUser.getId())
             .orElseThrow(() -> new IllegalArgumentException("내전 기록을 찾을 수 없습니다."));
+    }
+
+    private boolean hasAdminAuthority() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication != null && authentication.getAuthorities().stream()
+            .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
+    }
+
+    private boolean isRecordStatus(String status) {
+        return STATUS_PROCESSING.equals(status)
+            || STATUS_DRAFT.equals(status)
+            || STATUS_CONFIRMED.equals(status)
+            || STATUS_FAILED.equals(status);
     }
 
     private void ensureDraft(AnalysisGame game) {
