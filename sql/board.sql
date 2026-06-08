@@ -136,3 +136,64 @@ VALUES
 ('lol', '롤', 'https://drive.towardadiamond.com/tad/category-icons/lol.webp', '롤 게시판', 1),
 ('maple', '메이플랜드', 'https://drive.towardadiamond.com/tad/category-icons/maple.webp', '메이플랜드 게시판', 2),
 ('free', '자유', null, '자유 게시판', 3);
+
+CREATE TABLE IF NOT EXISTS board.tb_report (
+    id BIGSERIAL PRIMARY KEY,
+    reporter_id BIGINT NOT NULL,
+    target_type VARCHAR(20) NOT NULL,
+    target_id BIGINT NOT NULL,
+    reported_user_id BIGINT NOT NULL,
+    reason_code VARCHAR(50) NOT NULL,
+    reason_detail TEXT,
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+    handled_by BIGINT,
+    handled_at TIMESTAMP,
+    handler_memo TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_report_reporter
+        FOREIGN KEY (reporter_id) REFERENCES auth.tb_user(id) ON DELETE CASCADE,
+    CONSTRAINT fk_report_reported_user
+        FOREIGN KEY (reported_user_id) REFERENCES auth.tb_user(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_report_handled_by
+        FOREIGN KEY (handled_by) REFERENCES auth.tb_user(id) ON DELETE SET NULL,
+    CONSTRAINT uq_board_report_reporter_target
+        UNIQUE (reporter_id, target_type, target_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_board_report_status_created_at
+ON board.tb_report (status, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_board_report_target
+ON board.tb_report (target_type, target_id);
+
+CREATE INDEX IF NOT EXISTS idx_board_report_reported_user
+ON board.tb_report (reported_user_id);
+
+CREATE TABLE IF NOT EXISTS board.tb_user_sanction (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    sanction_type VARCHAR(20) NOT NULL,
+    reason TEXT NOT NULL,
+    starts_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP,
+    created_by BIGINT,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    revoked_at TIMESTAMP,
+    revoked_by BIGINT,
+    revoke_reason TEXT,
+
+    CONSTRAINT fk_user_sanction_user
+        FOREIGN KEY (user_id) REFERENCES auth.tb_user(id) ON DELETE CASCADE,
+    CONSTRAINT fk_user_sanction_created_by
+        FOREIGN KEY (created_by) REFERENCES auth.tb_user(id) ON DELETE SET NULL,
+    CONSTRAINT fk_user_sanction_revoked_by
+        FOREIGN KEY (revoked_by) REFERENCES auth.tb_user(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_sanction_user_created_at
+ON board.tb_user_sanction (user_id, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_user_sanction_active
+ON board.tb_user_sanction (user_id, revoked_at, starts_at, expires_at);

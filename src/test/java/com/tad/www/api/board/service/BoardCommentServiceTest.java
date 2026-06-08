@@ -42,6 +42,9 @@ class BoardCommentServiceTest {
     @Mock
     private BoardAttachmentService boardAttachmentService;
 
+    @Mock
+    private UserSanctionService userSanctionService;
+
     @InjectMocks
     private BoardCommentService boardCommentService;
 

@@ -3,6 +3,7 @@ package com.tad.www.api.board.controller;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,10 +26,18 @@ import com.tad.www.api.board.dto.BoardPostCreateRequest;
 import com.tad.www.api.board.dto.BoardPostDetailResponse;
 import com.tad.www.api.board.dto.BoardPostListResponse;
 import com.tad.www.api.board.dto.BoardPostUpdateRequest;
+import com.tad.www.api.board.dto.BoardReportCreateRequest;
+import com.tad.www.api.board.dto.BoardReportHandleRequest;
+import com.tad.www.api.board.dto.BoardReportResponse;
 import com.tad.www.api.board.dto.SuccessResponse;
+import com.tad.www.api.board.dto.UserSanctionCreateRequest;
+import com.tad.www.api.board.dto.UserSanctionResponse;
+import com.tad.www.api.board.dto.UserSanctionRevokeRequest;
 import com.tad.www.api.board.service.BoardCommentService;
 import com.tad.www.api.board.service.BoardLikeService;
+import com.tad.www.api.board.service.BoardReportService;
 import com.tad.www.api.board.service.BoardService;
+import com.tad.www.api.board.service.UserSanctionService;
 import com.tad.www.api.user.entity.User;
 
 import jakarta.validation.Valid;
@@ -42,6 +51,8 @@ public class BoardController {
     private final BoardService boardService;
     private final BoardCommentService boardCommentService;
     private final BoardLikeService boardLikeService;
+    private final BoardReportService boardReportService;
+    private final UserSanctionService userSanctionService;
 
     @GetMapping("/categories")
     public ResponseEntity<List<BoardCategoryResponse>> getCategories() {
@@ -136,5 +147,61 @@ public class BoardController {
         @AuthenticationPrincipal User currentUser
     ) {
         return ResponseEntity.ok(boardLikeService.unlikePost(postId, currentUser));
+    }
+
+    @PostMapping("/reports")
+    public ResponseEntity<BoardReportResponse> createReport(
+        @AuthenticationPrincipal User currentUser,
+        @Valid @RequestBody BoardReportCreateRequest request
+    ) {
+        return ResponseEntity.ok(boardReportService.createReport(currentUser, request));
+    }
+
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @GetMapping("/admin/reports")
+    public ResponseEntity<List<BoardReportResponse>> getAdminReports(
+        @RequestParam(required = false) String status,
+        @RequestParam(required = false) Integer limit
+    ) {
+        return ResponseEntity.ok(boardReportService.getAdminReports(status, limit));
+    }
+
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @PutMapping("/admin/reports/{reportId}")
+    public ResponseEntity<BoardReportResponse> handleReport(
+        @PathVariable Long reportId,
+        @AuthenticationPrincipal User currentUser,
+        @Valid @RequestBody BoardReportHandleRequest request
+    ) {
+        return ResponseEntity.ok(boardReportService.handleReport(reportId, currentUser, request));
+    }
+
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @GetMapping("/admin/sanctions")
+    public ResponseEntity<List<UserSanctionResponse>> getAdminSanctions(
+        @RequestParam(required = false) Long userId,
+        @RequestParam(defaultValue = "false") Boolean activeOnly,
+        @RequestParam(required = false) Integer limit
+    ) {
+        return ResponseEntity.ok(userSanctionService.getAdminSanctions(userId, activeOnly, limit));
+    }
+
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @PostMapping("/admin/sanctions")
+    public ResponseEntity<UserSanctionResponse> createSanction(
+        @AuthenticationPrincipal User currentUser,
+        @Valid @RequestBody UserSanctionCreateRequest request
+    ) {
+        return ResponseEntity.ok(userSanctionService.createSanction(currentUser, request));
+    }
+
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @PostMapping("/admin/sanctions/{sanctionId}/revoke")
+    public ResponseEntity<UserSanctionResponse> revokeSanction(
+        @PathVariable Long sanctionId,
+        @AuthenticationPrincipal User currentUser,
+        @Valid @RequestBody UserSanctionRevokeRequest request
+    ) {
+        return ResponseEntity.ok(userSanctionService.revokeSanction(sanctionId, currentUser, request));
     }
 }
