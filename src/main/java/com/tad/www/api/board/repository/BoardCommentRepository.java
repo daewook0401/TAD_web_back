@@ -1,6 +1,7 @@
 package com.tad.www.api.board.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -16,6 +17,9 @@ public interface BoardCommentRepository extends JpaRepository<BoardComment, Long
 
     @EntityGraph(attributePaths = {"post", "author", "parent"})
     List<BoardComment> findByPostIdOrderByCreatedAtAscIdAsc(Long postId);
+
+    @EntityGraph(attributePaths = {"post", "post.category", "author", "parent"})
+    Optional<BoardComment> findByIdAndIsDeletedFalse(Long id);
 
     @EntityGraph(attributePaths = {"post", "post.category"})
     @Query("""

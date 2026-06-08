@@ -54,9 +54,10 @@ public class AnalysisController {
     @GetMapping("/admin/records")
     public ResponseEntity<List<AnalysisAdminRecordResponse>> getAdminRecords(
         @RequestParam(value = "status", required = false) String status,
+        @RequestParam(value = "keyword", required = false) String keyword,
         @RequestParam(value = "limit", required = false) Integer limit
     ) {
-        return ResponseEntity.ok(analysisService.getAdminRecords(status, limit));
+        return ResponseEntity.ok(analysisService.getAdminRecords(status, keyword, limit));
     }
 
     @GetMapping("/rankings")

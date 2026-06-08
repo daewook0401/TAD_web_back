@@ -11,6 +11,7 @@ import java.util.stream.IntStream;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -88,19 +89,25 @@ public class AnalysisService {
     }
 
     @Transactional(readOnly = true)
-    public List<AnalysisAdminRecordResponse> getAdminRecords(String status, Integer limit) {
+    public List<AnalysisAdminRecordResponse> getAdminRecords(String status, String keyword, Integer limit) {
         String normalizedStatus = TextUtils.normalizeNullable(status);
         normalizedStatus = normalizedStatus == null ? null : normalizedStatus.toUpperCase(Locale.ROOT);
+        normalizedStatus = isRecordStatus(normalizedStatus) ? normalizedStatus : null;
+        String normalizedKeyword = TextUtils.normalizeNullable(keyword);
+        normalizedKeyword = normalizedKeyword == null ? null : normalizedKeyword.toLowerCase(Locale.ROOT);
+        Long gameId = parseGameId(normalizedKeyword);
         int normalizedLimit = limit == null || limit < 1
             ? DEFAULT_ADMIN_RECORD_LIMIT
             : Math.min(limit, MAX_ADMIN_RECORD_LIMIT);
 
-        List<AnalysisGame> games = isRecordStatus(normalizedStatus)
-            ? analysisGameRepository.findByStatusOrderByCreatedAtDesc(normalizedStatus)
-            : analysisGameRepository.findAllByOrderByCreatedAtDesc();
+        List<AnalysisGame> games = analysisGameRepository.findAdminRecords(
+            normalizedStatus,
+            normalizedKeyword,
+            gameId,
+            PageRequest.of(0, normalizedLimit)
+        );
 
         return games.stream()
-            .limit(normalizedLimit)
             .map(game -> AnalysisAdminRecordResponse.from(
                 game,
                 analysisGamePlayerStatRepository.findByGameIdOrderByTeamKeyAscSlotNumberAsc(game.getId())
@@ -316,6 +323,19 @@ public class AnalysisService {
             || STATUS_DRAFT.equals(status)
             || STATUS_CONFIRMED.equals(status)
             || STATUS_FAILED.equals(status);
+    }
+
+    private Long parseGameId(String keyword) {
+        if (keyword == null) {
+            return null;
+        }
+
+        String normalized = keyword.startsWith("#") ? keyword.substring(1) : keyword;
+        try {
+            return Long.parseLong(normalized);
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
     }
 
     private void ensureDraft(AnalysisGame game) {

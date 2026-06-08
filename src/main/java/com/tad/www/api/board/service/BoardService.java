@@ -34,6 +34,7 @@ public class BoardService {
     private final BoardPostRepository boardPostRepository;
     private final BoardAttachmentService boardAttachmentService;
     private final BoardPermissionService boardPermissionService;
+    private final UserSanctionService userSanctionService;
 
     @Transactional(readOnly = true)
     public List<BoardCategoryResponse> getCategories() {
@@ -88,6 +89,8 @@ public class BoardService {
 
     @Transactional
     public BoardPostDetailResponse createPost(User currentUser, BoardPostCreateRequest request, List<MultipartFile> files) {
+        userSanctionService.ensureBoardWritable(currentUser);
+
         BoardCategory category = boardCategoryRepository.findById(request.getCategoryId())
             .orElseThrow(() -> new IllegalArgumentException("카테고리를 찾을 수 없습니다."));
 
@@ -122,6 +125,7 @@ public class BoardService {
         BoardPost post = boardPostRepository.findByIdAndIsDeletedFalse(postId)
             .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
 
+        userSanctionService.ensureBoardWritable(currentUser);
         boardPermissionService.ensurePostWritable(post, currentUser);
 
         BoardCategory category = boardCategoryRepository.findById(request.getCategoryId())

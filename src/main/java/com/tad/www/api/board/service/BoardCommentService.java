@@ -30,6 +30,7 @@ public class BoardCommentService {
     private final BoardPostRepository boardPostRepository;
     private final BoardPermissionService boardPermissionService;
     private final BoardAttachmentService boardAttachmentService;
+    private final UserSanctionService userSanctionService;
 
     @Transactional(readOnly = true)
     public List<BoardCommentResponse> getComments(Long postId) {
@@ -70,6 +71,8 @@ public class BoardCommentService {
         BoardCommentCreateRequest request,
         List<MultipartFile> images
     ) {
+        userSanctionService.ensureBoardWritable(currentUser);
+
         BoardPost post = findVisiblePost(postId);
         BoardComment parent = resolveParent(postId, request.getParentId());
         String normalizedContent = normalizeContent(request.getContent());
@@ -103,6 +106,7 @@ public class BoardCommentService {
             throw new IllegalArgumentException("삭제된 댓글은 수정할 수 없습니다.");
         }
 
+        userSanctionService.ensureBoardWritable(currentUser);
         boardPermissionService.ensureCommentWritable(comment, currentUser);
         comment.setContent(request.getContent().trim());
         return BoardCommentResponse.from(
