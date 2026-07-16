@@ -26,9 +26,14 @@ git diff --check
 - 자동 배포 워크플로는 JAR 배포를 담당한다.
 - Garage endpoint와 Drive 공개 URL base는 배포 컨테이너 환경 변수로 제공되어야 전환이 활성화된다.
 
+## 배포 결과
+
+- GitHub Actions 배포 워크플로 성공
+- JAR 빌드, 서버 전송, 컨테이너 배포 단계를 모두 통과했다.
+
 ## 다음 단계
 
-- GitHub Actions 실행 결과 확인
+- Garage endpoint 및 Drive 공개 URL base 런타임 설정 후 실제 업로드를 확인한다.
 
 ## 승인
 
