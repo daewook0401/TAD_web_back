@@ -79,31 +79,19 @@ public class MinioStorageService {
     public String buildPublicFileUrl(String bucket, String objectKey) {
         String normalizedBucket = requireValue(bucket, "bucket");
         String normalizedObjectKey = requireValue(objectKey, "objectKey");
-        String drivePublicUrl = normalizeBaseUrl(minioProperties.getDrivePublicUrl());
-        if (drivePublicUrl == null) {
-            return buildLegacyFileUrl(normalizedBucket, normalizedObjectKey);
+        String publicUrl = normalizeBaseUrl(minioProperties.getDrivePublicUrl());
+        if (publicUrl == null) {
+            publicUrl = normalizeBaseUrl(minioProperties.getPublicUrl());
+        }
+        if (publicUrl == null) {
+            throw new IllegalStateException("Drive 공개 파일 URL base 설정이 필요합니다.");
         }
 
-        return drivePublicUrl
+        return publicUrl
             + "/public/"
             + UriUtils.encodePathSegment(normalizedBucket, StandardCharsets.UTF_8)
             + "/"
             + encodeObjectKey(normalizedObjectKey);
-    }
-
-    private String buildLegacyFileUrl(String bucket, String objectKey) {
-        String baseUrl = normalizeBaseUrl(minioProperties.getPublicUrl());
-        if (baseUrl == null) {
-            baseUrl = normalizeBaseUrl(minioProperties.getEndpoint());
-        }
-        if (baseUrl == null) {
-            throw new IllegalStateException("공개 파일 URL base 설정이 필요합니다.");
-        }
-        return baseUrl
-            + "/"
-            + UriUtils.encodePathSegment(bucket, StandardCharsets.UTF_8)
-            + "/"
-            + encodeObjectKey(objectKey);
     }
 
     private String normalizeBaseUrl(String baseUrl) {

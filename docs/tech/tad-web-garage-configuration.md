@@ -28,8 +28,8 @@ https://drive.example.com/public/tad/{encoded-object-key}
 - 버킷 생성이나 공개 정책 변경 권한은 주지 않는다.
 - 공개 여부 검사는 Drive 서비스가 담당한다.
 
-## 전환 호환성
+## 공개 URL base 우선순위
 
-`MINIO_DRIVE_PUBLIC_URL`을 아직 제공하지 않은 배포 환경에서는 기존 `MINIO_PUBLIC_URL` 또는 `MINIO_ENDPOINT` 형식의 URL을 반환한다. 이는 배포 설정 전 변경으로 기존 첨부 URL이 깨지는 것을 막기 위한 한시적 호환 동작이다.
+`MINIO_DRIVE_PUBLIC_URL`을 우선 사용한다. 이 값이 없으면 `MINIO_PUBLIC_URL`을 Drive 공개 URL base로 사용하며, 두 경우 모두 `/public/{bucket}/{objectKey}` 형식으로 반환한다.
 
-Garage 전환 완료 후에는 반드시 `MINIO_DRIVE_PUBLIC_URL`을 설정해 Drive 공개 경로를 사용한다.
+S3 endpoint는 객체 저장 API 용도이므로 공개 URL 생성에 사용하지 않는다.

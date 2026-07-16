@@ -19,12 +19,12 @@ class MinioStorageServiceTest {
     }
 
     @Test
-    void buildPublicFileUrlUsesLegacyStorageUrlUntilDrivePublicUrlIsConfigured() {
+    void buildPublicFileUrlUsesPublicUrlAsDriveBaseWhenDedicatedPropertyIsNotConfigured() {
         MinioProperties properties = new MinioProperties();
         properties.setPublicUrl("https://storage.example.com");
         MinioStorageService storageService = new MinioStorageService(null, properties);
 
         assertThat(storageService.buildPublicFileUrl("tad", "folder/file.png"))
-            .isEqualTo("https://storage.example.com/tad/folder/file.png");
+            .isEqualTo("https://storage.example.com/public/tad/folder/file.png");
     }
 }
