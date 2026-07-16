@@ -54,6 +54,8 @@ CREATE TABLE board.tb_post_like (
 CREATE TABLE board.tb_post_attachment (
     id BIGSERIAL PRIMARY KEY,
     post_id BIGINT NOT NULL,
+    bucket VARCHAR(100) NOT NULL,
+    object_key VARCHAR(500) NOT NULL,
     file_url TEXT NOT NULL,
     file_name VARCHAR(255),
     stored_name VARCHAR(255),
@@ -70,6 +72,8 @@ CREATE TABLE board.tb_post_attachment (
 CREATE TABLE board.tb_comment_attachment (
     id BIGSERIAL PRIMARY KEY,
     comment_id BIGINT NOT NULL,
+    bucket VARCHAR(100) NOT NULL,
+    object_key VARCHAR(500) NOT NULL,
     file_url TEXT NOT NULL,
     file_name VARCHAR(255),
     stored_name VARCHAR(255),

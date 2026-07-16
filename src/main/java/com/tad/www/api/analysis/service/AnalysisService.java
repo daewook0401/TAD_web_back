@@ -83,6 +83,7 @@ public class AnalysisService {
             .stream()
             .map(game -> AnalysisRecordSummaryResponse.from(
                 game,
+                publicScreenshotUrl(game),
                 analysisGamePlayerStatRepository.findByGameIdOrderByTeamKeyAscSlotNumberAsc(game.getId())
             ))
             .toList();
@@ -110,6 +111,7 @@ public class AnalysisService {
         return games.stream()
             .map(game -> AnalysisAdminRecordResponse.from(
                 game,
+                publicScreenshotUrl(game),
                 analysisGamePlayerStatRepository.findByGameIdOrderByTeamKeyAscSlotNumberAsc(game.getId())
             ))
             .toList();
@@ -177,7 +179,7 @@ public class AnalysisService {
                 STATUS_CONFIRMED
             )
             .stream()
-            .map(AnalysisPlayerRecordResponse::from)
+            .map(stat -> AnalysisPlayerRecordResponse.from(stat, publicScreenshotUrl(stat.getGame())))
             .toList();
     }
 
@@ -265,7 +267,14 @@ public class AnalysisService {
         List<AnalysisGamePlayerStat> stats = analysisGamePlayerStatRepository.findByGameIdOrderByTeamKeyAscSlotNumberAsc(game.getId());
         List<AnalyzeUploadResponse.PlayerStatResponse> team1Players = mapTeamStats(stats, "team1");
         List<AnalyzeUploadResponse.PlayerStatResponse> team2Players = mapTeamStats(stats, "team2");
-        return AnalyzeUploadResponse.from(game, team1Players, team2Players);
+        return AnalyzeUploadResponse.from(game, publicScreenshotUrl(game), team1Players, team2Players);
+    }
+
+    private String publicScreenshotUrl(AnalysisGame game) {
+        if (game.getBucket() == null || game.getBucket().isBlank() || game.getObjectKey() == null || game.getObjectKey().isBlank()) {
+            return game.getScreenshotUrl();
+        }
+        return minioStorageService.buildPublicFileUrl(game.getBucket(), game.getObjectKey());
     }
 
     private void dispatchDraftProcessing(Long gameId, String bucket, String objectKey) {

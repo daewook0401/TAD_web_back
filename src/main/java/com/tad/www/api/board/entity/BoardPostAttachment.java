@@ -37,6 +37,12 @@ public class BoardPostAttachment {
     @JoinColumn(name = "post_id", nullable = false)
     private BoardPost post;
 
+    @Column(name = "bucket", nullable = false, length = 100)
+    private String bucket;
+
+    @Column(name = "object_key", nullable = false, length = 500)
+    private String objectKey;
+
     @Column(name = "file_url", nullable = false)
     private String fileUrl;
 

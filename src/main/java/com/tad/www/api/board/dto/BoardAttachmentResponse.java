@@ -11,6 +11,8 @@ import lombok.Getter;
 public class BoardAttachmentResponse {
 
     private Long id;
+    private String bucket;
+    private String objectKey;
     private String fileUrl;
     private String fileName;
     private String contentType;
@@ -19,9 +21,15 @@ public class BoardAttachmentResponse {
     private Integer sortOrder;
 
     public static BoardAttachmentResponse from(BoardPostAttachment attachment) {
+        return from(attachment, attachment.getFileUrl());
+    }
+
+    public static BoardAttachmentResponse from(BoardPostAttachment attachment, String fileUrl) {
         return BoardAttachmentResponse.builder()
             .id(attachment.getId())
-            .fileUrl(attachment.getFileUrl())
+            .bucket(attachment.getBucket())
+            .objectKey(attachment.getObjectKey())
+            .fileUrl(fileUrl)
             .fileName(attachment.getFileName())
             .contentType(attachment.getContentType())
             .fileSize(attachment.getFileSize())
@@ -31,9 +39,15 @@ public class BoardAttachmentResponse {
     }
 
     public static BoardAttachmentResponse from(BoardCommentAttachment attachment) {
+        return from(attachment, attachment.getFileUrl());
+    }
+
+    public static BoardAttachmentResponse from(BoardCommentAttachment attachment, String fileUrl) {
         return BoardAttachmentResponse.builder()
             .id(attachment.getId())
-            .fileUrl(attachment.getFileUrl())
+            .bucket(attachment.getBucket())
+            .objectKey(attachment.getObjectKey())
+            .fileUrl(fileUrl)
             .fileName(attachment.getFileName())
             .contentType(attachment.getContentType())
             .fileSize(attachment.getFileSize())

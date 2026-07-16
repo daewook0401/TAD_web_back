@@ -25,6 +25,7 @@ public class AnalyzeUploadResponse {
 
     public static AnalyzeUploadResponse from(
         AnalysisGame game,
+        String screenshotUrl,
         List<PlayerStatResponse> team1Players,
         List<PlayerStatResponse> team2Players
     ) {
@@ -34,7 +35,7 @@ public class AnalyzeUploadResponse {
             .status(game.getStatus())
             .bucket(game.getBucket())
             .objectKey(game.getObjectKey())
-            .screenshotUrl(game.getScreenshotUrl())
+            .screenshotUrl(screenshotUrl)
             .createdAt(game.getCreatedAt())
             .confirmedAt(game.getConfirmedAt())
             .team1(new TeamResponse(team1Players))

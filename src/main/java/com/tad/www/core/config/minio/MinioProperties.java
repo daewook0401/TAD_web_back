@@ -12,6 +12,7 @@ public class MinioProperties {
 
     private String endpoint;
     private String publicUrl;
+    private String drivePublicUrl;
     private String accessKey;
     private String secretKey;
     private String bucket;

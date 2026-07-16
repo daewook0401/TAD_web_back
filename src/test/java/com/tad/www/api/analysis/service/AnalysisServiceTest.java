@@ -82,6 +82,8 @@ class AnalysisServiceTest {
         AnalysisGame game = AnalysisGame.builder()
             .id(15L)
             .status("CONFIRMED")
+            .bucket("tad")
+            .objectKey("analysis/games/game.png")
             .screenshotUrl("https://example.com/game.png")
             .createdAt(LocalDateTime.of(2026, 4, 16, 10, 0))
             .confirmedAt(LocalDateTime.of(2026, 4, 16, 10, 5))
@@ -106,6 +108,8 @@ class AnalysisServiceTest {
 
         when(analysisGamePlayerStatRepository.findRecordsByPlayerNameAndStatus("faker", "CONFIRMED"))
             .thenReturn(List.of(stat));
+        when(minioStorageService.buildPublicFileUrl("tad", "analysis/games/game.png"))
+            .thenReturn("https://drive.example.com/public/tad/analysis/games/game.png");
 
         List<AnalysisPlayerRecordResponse> records = analysisService.getPlayerRecords(" Faker ");
 
@@ -115,6 +119,7 @@ class AnalysisServiceTest {
                 assertThat(record.getPlayerName()).isEqualTo("Faker");
                 assertThat(record.getResult()).isEqualTo("WIN");
                 assertThat(record.getKills()).isEqualTo(8);
+                assertThat(record.getScreenshotUrl()).isEqualTo("https://drive.example.com/public/tad/analysis/games/game.png");
             });
     }
 

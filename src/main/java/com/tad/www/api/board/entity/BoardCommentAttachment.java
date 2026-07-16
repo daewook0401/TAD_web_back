@@ -37,6 +37,12 @@ public class BoardCommentAttachment {
     @JoinColumn(name = "comment_id", nullable = false)
     private BoardComment comment;
 
+    @Column(name = "bucket", nullable = false, length = 100)
+    private String bucket;
+
+    @Column(name = "object_key", nullable = false, length = 500)
+    private String objectKey;
+
     @Column(name = "file_url", nullable = false)
     private String fileUrl;
 

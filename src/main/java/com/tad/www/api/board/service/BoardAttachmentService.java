@@ -46,6 +46,8 @@ public class BoardAttachmentService {
             StoredFile storedFile = uploadFile(file, "posts", post.getId());
             BoardPostAttachment saved = boardPostAttachmentRepository.save(BoardPostAttachment.builder()
                 .post(post)
+                .bucket(storedFile.bucket())
+                .objectKey(storedFile.objectKey())
                 .fileUrl(storedFile.fileUrl())
                 .fileName(storedFile.fileName())
                 .storedName(storedFile.storedName())
@@ -54,7 +56,7 @@ public class BoardAttachmentService {
                 .fileKind(storedFile.fileKind())
                 .sortOrder(sortOrder++)
                 .build());
-            responses.add(BoardAttachmentResponse.from(saved));
+            responses.add(toResponse(saved));
         }
 
         return responses;
@@ -80,6 +82,8 @@ public class BoardAttachmentService {
 
             BoardCommentAttachment saved = boardCommentAttachmentRepository.save(BoardCommentAttachment.builder()
                 .comment(comment)
+                .bucket(storedFile.bucket())
+                .objectKey(storedFile.objectKey())
                 .fileUrl(storedFile.fileUrl())
                 .fileName(storedFile.fileName())
                 .storedName(storedFile.storedName())
@@ -88,7 +92,7 @@ public class BoardAttachmentService {
                 .fileKind(storedFile.fileKind())
                 .sortOrder(sortOrder++)
                 .build());
-            responses.add(BoardAttachmentResponse.from(saved));
+            responses.add(toResponse(saved));
         }
 
         return responses;
@@ -98,7 +102,7 @@ public class BoardAttachmentService {
     public List<BoardAttachmentResponse> getPostAttachments(Long postId) {
         return boardPostAttachmentRepository.findByPostIdOrderBySortOrderAscIdAsc(postId)
             .stream()
-            .map(BoardAttachmentResponse::from)
+            .map(this::toResponse)
             .toList();
     }
 
@@ -106,7 +110,7 @@ public class BoardAttachmentService {
     public List<BoardAttachmentResponse> getCommentAttachments(Long commentId) {
         return boardCommentAttachmentRepository.findByCommentIdOrderBySortOrderAscIdAsc(commentId)
             .stream()
-            .map(BoardAttachmentResponse::from)
+            .map(this::toResponse)
             .toList();
     }
 
@@ -116,6 +120,8 @@ public class BoardAttachmentService {
         String fileKind = contentType.startsWith("image/") ? FILE_KIND_IMAGE : FILE_KIND_FILE;
 
         return new StoredFile(
+            storedObject.bucket(),
+            storedObject.objectKey(),
             storedObject.fileUrl(),
             storedObject.fileName(),
             storedObject.storedName(),
@@ -129,7 +135,24 @@ public class BoardAttachmentService {
         return minioStorageService.normalizeContentType(contentType, fileName).toLowerCase(Locale.ROOT);
     }
 
+    private BoardAttachmentResponse toResponse(BoardPostAttachment attachment) {
+        return BoardAttachmentResponse.from(attachment, publicFileUrl(attachment.getBucket(), attachment.getObjectKey(), attachment.getFileUrl()));
+    }
+
+    private BoardAttachmentResponse toResponse(BoardCommentAttachment attachment) {
+        return BoardAttachmentResponse.from(attachment, publicFileUrl(attachment.getBucket(), attachment.getObjectKey(), attachment.getFileUrl()));
+    }
+
+    private String publicFileUrl(String bucket, String objectKey, String legacyFileUrl) {
+        if (bucket == null || bucket.isBlank() || objectKey == null || objectKey.isBlank()) {
+            return legacyFileUrl;
+        }
+        return minioStorageService.buildPublicFileUrl(bucket, objectKey);
+    }
+
     private record StoredFile(
+        String bucket,
+        String objectKey,
         String fileUrl,
         String fileName,
         String storedName,

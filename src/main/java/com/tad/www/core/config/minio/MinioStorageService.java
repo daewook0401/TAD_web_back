@@ -2,14 +2,16 @@ package com.tad.www.core.config.minio;
 
 import java.io.InputStream;
 import java.nio.file.Paths;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.util.UriUtils;
 
-import io.minio.BucketExistsArgs;
-import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import lombok.RequiredArgsConstructor;
@@ -25,8 +27,6 @@ public class MinioStorageService {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("업로드할 파일이 필요합니다.");
         }
-
-        ensureBucketExists();
 
         String originalFileName = sanitizeFileName(file.getOriginalFilename());
         String extension = extractExtension(originalFileName);
@@ -45,13 +45,13 @@ public class MinioStorageService {
                     .build()
             );
         } catch (Exception e) {
-            throw new IllegalStateException("MinIO 파일 업로드에 실패했습니다.", e);
+            throw new IllegalStateException("S3 파일 업로드에 실패했습니다.", e);
         }
 
         return new StoredObject(
             minioProperties.getBucket(),
             objectKey,
-            buildFileUrl(objectKey),
+            buildPublicFileUrl(minioProperties.getBucket(), objectKey),
             originalFileName,
             storedName,
             contentType,
@@ -76,35 +76,55 @@ public class MinioStorageService {
         };
     }
 
-    private void ensureBucketExists() {
-        try {
-            boolean exists = minioClient.bucketExists(
-                BucketExistsArgs.builder()
-                    .bucket(minioProperties.getBucket())
-                    .build()
-            );
-
-            if (!exists) {
-                minioClient.makeBucket(
-                    MakeBucketArgs.builder()
-                        .bucket(minioProperties.getBucket())
-                        .build()
-                );
-            }
-        } catch (Exception e) {
-            throw new IllegalStateException("MinIO bucket 확인에 실패했습니다.", e);
+    public String buildPublicFileUrl(String bucket, String objectKey) {
+        String normalizedBucket = requireValue(bucket, "bucket");
+        String normalizedObjectKey = requireValue(objectKey, "objectKey");
+        String drivePublicUrl = normalizeBaseUrl(minioProperties.getDrivePublicUrl());
+        if (drivePublicUrl == null) {
+            return buildLegacyFileUrl(normalizedBucket, normalizedObjectKey);
         }
+
+        return drivePublicUrl
+            + "/public/"
+            + UriUtils.encodePathSegment(normalizedBucket, StandardCharsets.UTF_8)
+            + "/"
+            + encodeObjectKey(normalizedObjectKey);
     }
 
-    private String buildFileUrl(String objectKey) {
-        String baseUrl = minioProperties.getPublicUrl();
+    private String buildLegacyFileUrl(String bucket, String objectKey) {
+        String baseUrl = normalizeBaseUrl(minioProperties.getPublicUrl());
+        if (baseUrl == null) {
+            baseUrl = normalizeBaseUrl(minioProperties.getEndpoint());
+        }
+        if (baseUrl == null) {
+            throw new IllegalStateException("공개 파일 URL base 설정이 필요합니다.");
+        }
+        return baseUrl
+            + "/"
+            + UriUtils.encodePathSegment(bucket, StandardCharsets.UTF_8)
+            + "/"
+            + encodeObjectKey(objectKey);
+    }
+
+    private String normalizeBaseUrl(String baseUrl) {
         if (baseUrl == null || baseUrl.isBlank()) {
-            baseUrl = minioProperties.getEndpoint();
+            return null;
         }
-        if (baseUrl.endsWith("/")) {
-            baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
+        String normalized = baseUrl.trim();
+        return normalized.endsWith("/") ? normalized.substring(0, normalized.length() - 1) : normalized;
+    }
+
+    private String encodeObjectKey(String objectKey) {
+        return Arrays.stream(objectKey.split("/", -1))
+            .map(segment -> UriUtils.encodePathSegment(segment, StandardCharsets.UTF_8))
+            .collect(Collectors.joining("/"));
+    }
+
+    private String requireValue(String value, String fieldName) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException(fieldName + " 값이 필요합니다.");
         }
-        return baseUrl + "/" + minioProperties.getBucket() + "/" + objectKey;
+        return value.trim();
     }
 
     private String sanitizeFileName(String fileName) {

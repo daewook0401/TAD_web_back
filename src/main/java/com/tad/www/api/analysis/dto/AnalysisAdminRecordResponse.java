@@ -26,7 +26,7 @@ public class AnalysisAdminRecordResponse {
     private Integer recognizedPlayers;
     private Boolean reviewRequired;
 
-    public static AnalysisAdminRecordResponse from(AnalysisGame game, List<AnalysisGamePlayerStat> stats) {
+    public static AnalysisAdminRecordResponse from(AnalysisGame game, String screenshotUrl, List<AnalysisGamePlayerStat> stats) {
         int recognizedPlayers = (int) stats.stream()
             .map(AnalysisGamePlayerStat::getPlayerNameSnapshot)
             .filter(name -> name != null && !name.isBlank())
@@ -40,7 +40,7 @@ public class AnalysisAdminRecordResponse {
             .uploaderEmail(uploader == null ? null : uploader.getEmail())
             .status(game.getStatus())
             .winner(game.getWinner())
-            .screenshotUrl(game.getScreenshotUrl())
+            .screenshotUrl(screenshotUrl)
             .createdAt(game.getCreatedAt())
             .confirmedAt(game.getConfirmedAt())
             .recognizedPlayers(recognizedPlayers)

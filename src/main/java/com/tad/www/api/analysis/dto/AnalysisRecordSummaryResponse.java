@@ -22,7 +22,7 @@ public class AnalysisRecordSummaryResponse {
     private Integer recognizedPlayers;
     private Boolean reviewRequired;
 
-    public static AnalysisRecordSummaryResponse from(AnalysisGame game, List<AnalysisGamePlayerStat> stats) {
+    public static AnalysisRecordSummaryResponse from(AnalysisGame game, String screenshotUrl, List<AnalysisGamePlayerStat> stats) {
         int recognizedPlayers = (int) stats.stream()
             .map(AnalysisGamePlayerStat::getPlayerNameSnapshot)
             .filter(name -> name != null && !name.isBlank())
@@ -32,7 +32,7 @@ public class AnalysisRecordSummaryResponse {
             .gameNumber(game.getId())
             .status(game.getStatus())
             .winner(game.getWinner())
-            .screenshotUrl(game.getScreenshotUrl())
+            .screenshotUrl(screenshotUrl)
             .createdAt(game.getCreatedAt())
             .confirmedAt(game.getConfirmedAt())
             .recognizedPlayers(recognizedPlayers)

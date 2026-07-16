@@ -26,7 +26,7 @@ public class AnalysisPlayerRecordResponse {
     private LocalDateTime createdAt;
     private LocalDateTime confirmedAt;
 
-    public static AnalysisPlayerRecordResponse from(AnalysisGamePlayerStat stat) {
+    public static AnalysisPlayerRecordResponse from(AnalysisGamePlayerStat stat, String screenshotUrl) {
         AnalysisGame game = stat.getGame();
         String playerName = stat.getPlayer() == null ? stat.getPlayerNameSnapshot() : stat.getPlayer().getPlayerName();
 
@@ -41,7 +41,7 @@ public class AnalysisPlayerRecordResponse {
             .assists(stat.getAssists())
             .cs(stat.getCs())
             .gold(stat.getGold())
-            .screenshotUrl(game.getScreenshotUrl())
+            .screenshotUrl(screenshotUrl)
             .createdAt(game.getCreatedAt())
             .confirmedAt(game.getConfirmedAt())
             .build();
