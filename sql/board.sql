@@ -137,8 +137,8 @@ ADD COLUMN IF NOT EXISTS post_type VARCHAR(20) NOT NULL DEFAULT 'free';
 
 INSERT INTO board.tb_post_categories (category_key, name, icon_url, summary, display_order)
 VALUES
-('lol', '롤', 'https://drive.towardadiamond.com/tad/category-icons/lol.webp', '롤 게시판', 1),
-('maple', '메이플랜드', 'https://drive.towardadiamond.com/tad/category-icons/maple.webp', '메이플랜드 게시판', 2),
+('lol', '롤', 'https://drive.towardadiamond.com/public/tad/category-icons/lol.webp', '롤 게시판', 1),
+('maple', '메이플랜드', 'https://drive.towardadiamond.com/public/tad/category-icons/maple.webp', '메이플랜드 게시판', 2),
 ('free', '자유', null, '자유 게시판', 3);
 
 CREATE TABLE IF NOT EXISTS board.tb_report (
