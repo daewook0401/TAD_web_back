@@ -1,4 +1,4 @@
-package com.tad.www.core.config.minio;
+package com.tad.www.core.config.garage;
 
 import java.io.InputStream;
 import java.nio.file.Paths;
@@ -12,16 +12,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.util.UriUtils;
 
-import io.minio.MinioClient;
-import io.minio.PutObjectArgs;
 import lombok.RequiredArgsConstructor;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 @Service
 @RequiredArgsConstructor
-public class MinioStorageService {
+public class GarageStorageService {
 
-    private final MinioClient minioClient;
-    private final MinioProperties minioProperties;
+    private final S3Client garageS3Client;
+    private final GarageProperties garageProperties;
 
     public StoredObject store(MultipartFile file, String objectPrefix) {
         if (file == null || file.isEmpty()) {
@@ -36,22 +37,23 @@ public class MinioStorageService {
         String contentType = normalizeContentType(file.getContentType(), originalFileName);
 
         try (InputStream inputStream = file.getInputStream()) {
-            minioClient.putObject(
-                PutObjectArgs.builder()
-                    .bucket(minioProperties.getBucket())
-                    .object(objectKey)
-                    .stream(inputStream, file.getSize(), -1)
+            garageS3Client.putObject(
+                PutObjectRequest.builder()
+                    .bucket(garageProperties.getBucket())
+                    .key(objectKey)
+                    .contentLength(file.getSize())
                     .contentType(contentType)
-                    .build()
+                    .build(),
+                RequestBody.fromInputStream(inputStream, file.getSize())
             );
         } catch (Exception e) {
             throw new IllegalStateException("S3 파일 업로드에 실패했습니다.", e);
         }
 
         return new StoredObject(
-            minioProperties.getBucket(),
+            garageProperties.getBucket(),
             objectKey,
-            buildPublicFileUrl(minioProperties.getBucket(), objectKey),
+            buildPublicFileUrl(garageProperties.getBucket(), objectKey),
             originalFileName,
             storedName,
             contentType,
@@ -79,10 +81,7 @@ public class MinioStorageService {
     public String buildPublicFileUrl(String bucket, String objectKey) {
         String normalizedBucket = requireValue(bucket, "bucket");
         String normalizedObjectKey = requireValue(objectKey, "objectKey");
-        String publicUrl = normalizeBaseUrl(minioProperties.getDrivePublicUrl());
-        if (publicUrl == null) {
-            publicUrl = normalizeBaseUrl(minioProperties.getPublicUrl());
-        }
+        String publicUrl = normalizeBaseUrl(garageProperties.getDrivePublicUrl());
         if (publicUrl == null) {
             throw new IllegalStateException("Drive 공개 파일 URL base 설정이 필요합니다.");
         }

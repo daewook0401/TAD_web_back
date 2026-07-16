@@ -21,13 +21,13 @@ import com.tad.www.api.board.entity.BoardPost;
 import com.tad.www.api.board.entity.BoardPostAttachment;
 import com.tad.www.api.board.repository.BoardCommentAttachmentRepository;
 import com.tad.www.api.board.repository.BoardPostAttachmentRepository;
-import com.tad.www.core.config.minio.MinioStorageService;
+import com.tad.www.core.config.garage.GarageStorageService;
 
 @ExtendWith(MockitoExtension.class)
 class BoardAttachmentServiceTest {
 
     @Mock
-    private MinioStorageService minioStorageService;
+    private GarageStorageService garageStorageService;
 
     @Mock
     private BoardPostAttachmentRepository boardPostAttachmentRepository;
@@ -42,7 +42,7 @@ class BoardAttachmentServiceTest {
     void storePostAttachmentsPersistsObjectLocatorAndReturnsDrivePublicUrl() {
         BoardPost post = BoardPost.builder().id(2L).build();
         MockMultipartFile file = new MockMultipartFile("files", "preview.png", "image/png", new byte[] {1, 2, 3});
-        MinioStorageService.StoredObject storedObject = new MinioStorageService.StoredObject(
+        GarageStorageService.StoredObject storedObject = new GarageStorageService.StoredObject(
             "tad",
             "board/posts/2/preview.png",
             "https://drive.example.com/public/tad/board/posts/2/preview.png",
@@ -51,9 +51,9 @@ class BoardAttachmentServiceTest {
             "image/png",
             3L
         );
-        when(minioStorageService.store(eq(file), eq("board/posts/2"))).thenReturn(storedObject);
-        when(minioStorageService.normalizeContentType("image/png", "preview.png")).thenReturn("image/png");
-        when(minioStorageService.buildPublicFileUrl("tad", "board/posts/2/preview.png"))
+        when(garageStorageService.store(eq(file), eq("board/posts/2"))).thenReturn(storedObject);
+        when(garageStorageService.normalizeContentType("image/png", "preview.png")).thenReturn("image/png");
+        when(garageStorageService.buildPublicFileUrl("tad", "board/posts/2/preview.png"))
             .thenReturn("https://drive.example.com/public/tad/board/posts/2/preview.png");
         when(boardPostAttachmentRepository.save(any(BoardPostAttachment.class))).thenAnswer(invocation -> {
             BoardPostAttachment attachment = invocation.getArgument(0);

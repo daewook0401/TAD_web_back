@@ -33,7 +33,7 @@ import com.tad.www.api.analysis.repository.AnalysisGamePlayerStatRepository;
 import com.tad.www.api.analysis.repository.AnalysisGameRepository;
 import com.tad.www.api.analysis.repository.AnalysisPlayerRepository;
 import com.tad.www.api.user.entity.User;
-import com.tad.www.core.config.minio.MinioStorageService;
+import com.tad.www.core.config.garage.GarageStorageService;
 import com.tad.www.core.util.TextUtils;
 
 import lombok.RequiredArgsConstructor;
@@ -52,7 +52,7 @@ public class AnalysisService {
     private static final int DEFAULT_ADMIN_RECORD_LIMIT = 100;
     private static final int MAX_ADMIN_RECORD_LIMIT = 300;
 
-    private final MinioStorageService minioStorageService;
+    private final GarageStorageService garageStorageService;
     private final AnalysisPlayerRepository analysisPlayerRepository;
     private final AnalysisGameRepository analysisGameRepository;
     private final AnalysisGamePlayerStatRepository analysisGamePlayerStatRepository;
@@ -61,7 +61,7 @@ public class AnalysisService {
     @Transactional
     public AnalyzeUploadResponse uploadDraft(User currentUser, MultipartFile image) {
         validateImage(image);
-        MinioStorageService.StoredObject storedImage = minioStorageService.store(image, "analysis/games");
+        GarageStorageService.StoredObject storedImage = garageStorageService.store(image, "analysis/games");
 
         AnalysisGame savedGame = analysisGameRepository.save(AnalysisGame.builder()
             .uploader(currentUser)
@@ -274,7 +274,7 @@ public class AnalysisService {
         if (game.getBucket() == null || game.getBucket().isBlank() || game.getObjectKey() == null || game.getObjectKey().isBlank()) {
             return game.getScreenshotUrl();
         }
-        return minioStorageService.buildPublicFileUrl(game.getBucket(), game.getObjectKey());
+        return garageStorageService.buildPublicFileUrl(game.getBucket(), game.getObjectKey());
     }
 
     private void dispatchDraftProcessing(Long gameId, String bucket, String objectKey) {
@@ -358,7 +358,7 @@ public class AnalysisService {
             throw new IllegalArgumentException("분석할 이미지 파일이 필요합니다.");
         }
 
-        String contentType = minioStorageService.normalizeContentType(image.getContentType(), image.getOriginalFilename());
+        String contentType = garageStorageService.normalizeContentType(image.getContentType(), image.getOriginalFilename());
         if (!contentType.startsWith("image/")) {
             throw new IllegalArgumentException("이미지 파일만 업로드할 수 있습니다.");
         }

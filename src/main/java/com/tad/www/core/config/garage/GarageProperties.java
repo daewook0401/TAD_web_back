@@ -1,4 +1,4 @@
-package com.tad.www.core.config.minio;
+package com.tad.www.core.config.garage;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -7,13 +7,13 @@ import lombok.Setter;
 
 @Getter
 @Setter
-@ConfigurationProperties(prefix = "minio")
-public class MinioProperties {
+@ConfigurationProperties(prefix = "garage")
+public class GarageProperties {
 
     private String endpoint;
-    private String publicUrl;
     private String drivePublicUrl;
     private String accessKey;
     private String secretKey;
     private String bucket;
+    private String region;
 }

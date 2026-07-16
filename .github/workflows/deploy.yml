@@ -43,6 +43,29 @@ jobs:
             mkdir -p /home/daewook/server/tad/config
           "
 
+      - name: Configure Garage object storage
+        env:
+          GARAGE_S3_ENDPOINT: ${{ secrets.GARAGE_S3_ENDPOINT }}
+          GARAGE_S3_ACCESS_KEY: ${{ secrets.GARAGE_S3_ACCESS_KEY }}
+          GARAGE_S3_SECRET_KEY: ${{ secrets.GARAGE_S3_SECRET_KEY }}
+          DRIVE_PUBLIC_URL: ${{ secrets.DRIVE_PUBLIC_URL }}
+        run: |
+          ssh -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} '
+            set -eu
+            config_file=/home/daewook/server/tad/config/application.properties
+            touch "$config_file"
+            sed -i "/^garage\./d" "$config_file"
+          '
+          printf '%s\n' \
+            "garage.endpoint=${GARAGE_S3_ENDPOINT}" \
+            "garage.access-key=${GARAGE_S3_ACCESS_KEY}" \
+            "garage.secret-key=${GARAGE_S3_SECRET_KEY}" \
+            "garage.bucket=tad" \
+            "garage.region=garage" \
+            "garage.drive-public-url=${DRIVE_PUBLIC_URL}" \
+            | ssh -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+              'cat >> /home/daewook/server/tad/config/application.properties'
+
       - name: Copy deployment files to server
         run: |
           scp -P ${{ secrets.SSH_PORT }} app.jar \

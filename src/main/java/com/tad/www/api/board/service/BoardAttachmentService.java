@@ -15,7 +15,7 @@ import com.tad.www.api.board.entity.BoardPost;
 import com.tad.www.api.board.entity.BoardPostAttachment;
 import com.tad.www.api.board.repository.BoardCommentAttachmentRepository;
 import com.tad.www.api.board.repository.BoardPostAttachmentRepository;
-import com.tad.www.core.config.minio.MinioStorageService;
+import com.tad.www.core.config.garage.GarageStorageService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -26,7 +26,7 @@ public class BoardAttachmentService {
     private static final String FILE_KIND_IMAGE = "image";
     private static final String FILE_KIND_FILE = "file";
 
-    private final MinioStorageService minioStorageService;
+    private final GarageStorageService garageStorageService;
     private final BoardPostAttachmentRepository boardPostAttachmentRepository;
     private final BoardCommentAttachmentRepository boardCommentAttachmentRepository;
 
@@ -115,7 +115,7 @@ public class BoardAttachmentService {
     }
 
     private StoredFile uploadFile(MultipartFile file, String domain, Long ownerId) {
-        MinioStorageService.StoredObject storedObject = minioStorageService.store(file, "board/" + domain + "/" + ownerId);
+        GarageStorageService.StoredObject storedObject = garageStorageService.store(file, "board/" + domain + "/" + ownerId);
         String contentType = normalizeContentType(storedObject.contentType(), storedObject.fileName());
         String fileKind = contentType.startsWith("image/") ? FILE_KIND_IMAGE : FILE_KIND_FILE;
 
@@ -132,7 +132,7 @@ public class BoardAttachmentService {
     }
 
     private String normalizeContentType(String contentType, String fileName) {
-        return minioStorageService.normalizeContentType(contentType, fileName).toLowerCase(Locale.ROOT);
+        return garageStorageService.normalizeContentType(contentType, fileName).toLowerCase(Locale.ROOT);
     }
 
     private BoardAttachmentResponse toResponse(BoardPostAttachment attachment) {
@@ -147,7 +147,7 @@ public class BoardAttachmentService {
         if (bucket == null || bucket.isBlank() || objectKey == null || objectKey.isBlank()) {
             return legacyFileUrl;
         }
-        return minioStorageService.buildPublicFileUrl(bucket, objectKey);
+        return garageStorageService.buildPublicFileUrl(bucket, objectKey);
     }
 
     private record StoredFile(

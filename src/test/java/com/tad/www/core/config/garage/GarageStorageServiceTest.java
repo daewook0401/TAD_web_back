@@ -1,16 +1,16 @@
-package com.tad.www.core.config.minio;
+package com.tad.www.core.config.garage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 
-class MinioStorageServiceTest {
+class GarageStorageServiceTest {
 
     @Test
     void buildPublicFileUrlUsesDrivePublicPathAndEncodesObjectKey() {
-        MinioProperties properties = new MinioProperties();
+        GarageProperties properties = new GarageProperties();
         properties.setDrivePublicUrl("https://drive.example.com/");
-        MinioStorageService storageService = new MinioStorageService(null, properties);
+        GarageStorageService storageService = new GarageStorageService(null, properties);
 
         String fileUrl = storageService.buildPublicFileUrl("tad", "board/posts/2/이미지 파일.png");
 
@@ -19,12 +19,12 @@ class MinioStorageServiceTest {
     }
 
     @Test
-    void buildPublicFileUrlUsesPublicUrlAsDriveBaseWhenDedicatedPropertyIsNotConfigured() {
-        MinioProperties properties = new MinioProperties();
-        properties.setPublicUrl("https://storage.example.com");
-        MinioStorageService storageService = new MinioStorageService(null, properties);
+    void buildPublicFileUrlUsesConfiguredDriveBase() {
+        GarageProperties properties = new GarageProperties();
+        properties.setDrivePublicUrl("https://drive.example.com");
+        GarageStorageService storageService = new GarageStorageService(null, properties);
 
         assertThat(storageService.buildPublicFileUrl("tad", "folder/file.png"))
-            .isEqualTo("https://storage.example.com/public/tad/folder/file.png");
+            .isEqualTo("https://drive.example.com/public/tad/folder/file.png");
     }
 }

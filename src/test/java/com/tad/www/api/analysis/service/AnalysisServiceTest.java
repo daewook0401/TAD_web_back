@@ -26,13 +26,13 @@ import com.tad.www.api.analysis.repository.AnalysisGamePlayerStatRepository;
 import com.tad.www.api.analysis.repository.AnalysisGameRepository;
 import com.tad.www.api.analysis.repository.AnalysisPlayerRankingProjection;
 import com.tad.www.api.analysis.repository.AnalysisPlayerRepository;
-import com.tad.www.core.config.minio.MinioStorageService;
+import com.tad.www.core.config.garage.GarageStorageService;
 
 @ExtendWith(MockitoExtension.class)
 class AnalysisServiceTest {
 
     @Mock
-    private MinioStorageService minioStorageService;
+    private GarageStorageService garageStorageService;
 
     @Mock
     private AnalysisPlayerRepository analysisPlayerRepository;
@@ -108,7 +108,7 @@ class AnalysisServiceTest {
 
         when(analysisGamePlayerStatRepository.findRecordsByPlayerNameAndStatus("faker", "CONFIRMED"))
             .thenReturn(List.of(stat));
-        when(minioStorageService.buildPublicFileUrl("tad", "analysis/games/game.png"))
+        when(garageStorageService.buildPublicFileUrl("tad", "analysis/games/game.png"))
             .thenReturn("https://drive.example.com/public/tad/analysis/games/game.png");
 
         List<AnalysisPlayerRecordResponse> records = analysisService.getPlayerRecords(" Faker ");
