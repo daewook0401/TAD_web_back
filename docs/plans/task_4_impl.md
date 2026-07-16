@@ -13,6 +13,12 @@
 - MinIO 의존성을 제거한다.
 - GitHub Actions 환경 비밀값을 통해 Garage 런타임 설정을 생성한다.
 
+## 배포 설정 주입 보완
+
+- 기존 운영 Compose 파일을 수정하지 않고, 배포 시점에 Garage 환경 변수를 주입하는 Compose override 파일을 생성한다.
+- override 대상 서비스명은 운영 Compose의 서비스 목록에서 동적으로 확인한다.
+- 컨테이너 기동 후 실행 상태를 확인해 설정 누락으로 인한 즉시 종료를 배포 단계에서 실패로 처리한다.
+
 ## 수정 예정 파일
 
 - `build.gradle`

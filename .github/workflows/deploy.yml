@@ -66,6 +66,41 @@ jobs:
             | ssh -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
               'cat >> /home/daewook/server/tad/config/application.properties'
 
+      - name: Create Garage Compose override
+        env:
+          GARAGE_S3_ENDPOINT: ${{ secrets.GARAGE_S3_ENDPOINT }}
+          GARAGE_S3_ACCESS_KEY: ${{ secrets.GARAGE_S3_ACCESS_KEY }}
+          GARAGE_S3_SECRET_KEY: ${{ secrets.GARAGE_S3_SECRET_KEY }}
+          DRIVE_PUBLIC_URL: ${{ secrets.DRIVE_PUBLIC_URL }}
+        run: |
+          printf '%s\n' \
+            "$GARAGE_S3_ENDPOINT" \
+            "$GARAGE_S3_ACCESS_KEY" \
+            "$GARAGE_S3_SECRET_KEY" \
+            "$DRIVE_PUBLIC_URL" \
+            | ssh -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} '
+              set -eu
+              IFS= read -r garage_endpoint
+              IFS= read -r garage_access_key
+              IFS= read -r garage_secret_key
+              IFS= read -r drive_public_url
+              cd /home/daewook/server/tad
+              compose_services=$(docker compose -f docker-compose.prod.yml config --services)
+              service_count=$(printf "%s\n" "$compose_services" | wc -l)
+              test "$service_count" -eq 1
+              service_name=$(printf "%s\n" "$compose_services" | sed -n "1p")
+              cat > docker-compose.garage.yml <<EOF
+          services:
+            ${service_name}:
+              environment:
+                GARAGE_ENDPOINT: "${garage_endpoint}"
+                GARAGE_ACCESS_KEY: "${garage_access_key}"
+                GARAGE_SECRET_KEY: "${garage_secret_key}"
+                GARAGE_REGION: "garage"
+                GARAGE_DRIVE_PUBLIC_URL: "${drive_public_url}"
+          EOF
+            '
+
       - name: Copy deployment files to server
         run: |
           scp -P ${{ secrets.SSH_PORT }} app.jar \
@@ -76,7 +111,12 @@ jobs:
           ssh -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
             cd /home/daewook/server/tad &&
             export GIT_COMMIT_HASH=${GITHUB_SHA::7} &&
-            (docker compose -f docker-compose.prod.yml down || true) &&
-            docker compose -f docker-compose.prod.yml up -d --build &&
+            (docker compose -f docker-compose.prod.yml -f docker-compose.garage.yml down || true) &&
+            docker compose -f docker-compose.prod.yml -f docker-compose.garage.yml up -d --build &&
+            service_name=\$(docker compose -f docker-compose.prod.yml -f docker-compose.garage.yml config --services | sed -n '1p') &&
+            container_id=\$(docker compose -f docker-compose.prod.yml -f docker-compose.garage.yml ps -q \$service_name) &&
+            sleep 8 &&
+            test -n \$container_id &&
+            test \"\$(docker inspect -f '{{.State.Running}}' \$container_id)\" = true &&
             docker image prune -f
           "
